@@ -1,5 +1,5 @@
-const mysql = require('mysql2/promise'); // 'promise' use kar rahe hain taaki async/await use kar sakein
-require('dotenv').config();
+const mysql = require('mysql2/promise');
+require('dotenv').config({ override: true });
 
 const db = mysql.createPool({
     host: process.env.DB_HOST,
