@@ -3,7 +3,7 @@ const { body, validationResult } = require('express-validator');
 
 exports.validateMessage = [
     body('name').notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Valid email is required'),
+    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email is required'),
     body('message').notEmpty().withMessage('Message cannot be empty')
 ];
 
