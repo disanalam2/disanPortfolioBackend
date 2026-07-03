@@ -98,6 +98,16 @@ const syncDatabase = async () => {
             console.log('✅ Column resume_link already exists in about table.');
         }
 
+        // Check for 'githubLinkBackend' column in 'projects' table
+        const [projColumns] = await db.query("SHOW COLUMNS FROM projects LIKE 'githubLinkBackend'");
+        if (projColumns.length === 0) {
+            console.log('🔄 Adding missing column: githubLinkBackend to projects table...');
+            await db.execute("ALTER TABLE projects ADD COLUMN githubLinkBackend VARCHAR(255) DEFAULT NULL;");
+            console.log('✅ Column githubLinkBackend added successfully!');
+        } else {
+            console.log('✅ Column githubLinkBackend already exists.');
+        }
+
     } catch (error) {
         console.error('❌ Database Sync Error:', error.message);
     }
