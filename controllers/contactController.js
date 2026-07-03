@@ -7,6 +7,8 @@ exports.validateMessage = [
     body('message').notEmpty().withMessage('Message cannot be empty')
 ];
 
+const nodemailer = require('nodemailer');
+
 exports.sendMessage = async (req, res, next) => {
     try {
         const errors = validationResult(req);
@@ -16,10 +18,46 @@ exports.sendMessage = async (req, res, next) => {
 
         const { name, email, phone, preference, message } = req.body;
 
+        // 1. Save to Database
         const sql = `INSERT INTO messages (name, email, phone, preference, message) VALUES (?, ?, ?, ?, ?)`;
         await db.execute(sql, [name, email, phone || "", preference || "", message]);
 
+        // 2. Send Response immediately (Don't make user wait for email to send)
         res.status(201).json({ success: true, message: "Message successfully sent to database!" });
+
+        // 3. Send Email Notification asynchronously
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS
+                    }
+                });
+
+                const mailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: process.env.EMAIL_USER, // Bhejenge khud ko hi notification ke liye
+                    subject: `New Portfolio Message from ${name}`,
+                    html: `
+                        <h2>New Message on Disan Portfolio</h2>
+                        <p><strong>Name:</strong> ${name}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+                        <p><strong>Contact Preference:</strong> ${preference || 'Not provided'}</p>
+                        <hr />
+                        <p><strong>Message:</strong></p>
+                        <p>${message}</p>
+                    `
+                };
+
+                await transporter.sendMail(mailOptions);
+                console.log(`Email notification sent for message from ${name}`);
+            } catch (emailError) {
+                console.error("Failed to send email notification:", emailError);
+            }
+        }
     } catch (error) {
         next(error);
     }
