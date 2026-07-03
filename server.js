@@ -69,8 +69,15 @@ app.use((req, res, next) => {
     }
 });
 
+// Contact form spam rokne ke liye rate limiter
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Max 5 messages per IP per hour
+  message: { success: false, message: 'Too many messages sent from this IP, please try again after an hour.' }
+});
+
 app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
-app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/contact', contactLimiter, require('./routes/contactRoutes'));
 app.use('/api/about', require('./routes/aboutRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/skills', require('./routes/skillRoutes'));
