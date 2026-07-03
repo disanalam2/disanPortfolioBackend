@@ -84,6 +84,7 @@ app.use('/api/skills', require('./routes/skillRoutes'));
 app.use('/api/experience', require('./routes/experienceRoutes'));
 app.use('/api/education', require('./routes/educationRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
 
 // Basic Test Route
 app.get('/', (req, res) => {
