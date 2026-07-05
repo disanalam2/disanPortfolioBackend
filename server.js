@@ -107,6 +107,10 @@ app.get('/sitemap.xml', sitemapController.generateSitemap);
 // Dynamic LLMS.txt Route
 app.get('/llms.txt', llmsController.generateLLMS);
 
+// SEO Share Route for Social Media Bots (WhatsApp, Twitter, etc.)
+const seoController = require('./controllers/seoController');
+app.get('/api/seo/blogs/:slug', seoController.renderBlogSEO);
+
 // Error Handling Middleware (sabse last me hona chahiye)
 app.use(errorHandler);
 
