@@ -11,6 +11,12 @@ const errorHandler = require('./middleware/errorMiddleware');
 
 const app = express();
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
+
+// Serve Swagger API Docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Middlewares
 app.use(helmet()); // Secures HTTP headers
 app.use(compression()); // Compresses API responses for faster load times
@@ -85,11 +91,21 @@ app.use('/api/experience', require('./routes/experienceRoutes'));
 app.use('/api/education', require('./routes/educationRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/blogs', require('./routes/blogRoutes'));
+
+const sitemapController = require('./controllers/sitemapController');
+const llmsController = require('./controllers/llmsController');
 
 // Basic Test Route
 app.get('/', (req, res) => {
     res.send('Disan Portfolio Backend is Running with Routes!');
 });
+
+// Dynamic Sitemap Route
+app.get('/sitemap.xml', sitemapController.generateSitemap);
+
+// Dynamic LLMS.txt Route
+app.get('/llms.txt', llmsController.generateLLMS);
 
 // Error Handling Middleware (sabse last me hona chahiye)
 app.use(errorHandler);

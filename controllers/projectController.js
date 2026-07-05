@@ -1,6 +1,9 @@
-const db = require('../config/db');
+const ProjectService = require('../services/projectService');
 const { body, validationResult } = require('express-validator');
 
+/**
+ * Validation rules for project endpoints.
+ */
 exports.validateProject = [
     body('title').notEmpty().withMessage('Title is required').trim(),
     body('description').notEmpty().withMessage('Description is required'),
@@ -9,20 +12,27 @@ exports.validateProject = [
     body('media').optional().isArray().withMessage('media must be an array')
 ];
 
+/**
+ * Retrieves all projects.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 exports.getProjects = async (req, res, next) => {
     try {
-        const [rows] = await db.query('SELECT * FROM projects ORDER BY created_at DESC');
-        const formattedProjects = rows.map(proj => ({
-            ...proj,
-            techStack: proj.techStack ? JSON.parse(proj.techStack) : [],
-            media: proj.media ? JSON.parse(proj.media) : []
-        }));
+        const formattedProjects = await ProjectService.getAllProjects();
         res.status(200).json(formattedProjects);
     } catch (error) {
         next(error);
     }
 };
 
+/**
+ * Adds a new project.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 exports.addProject = async (req, res, next) => {
     try {
         const errors = validationResult(req);
@@ -30,19 +40,19 @@ exports.addProject = async (req, res, next) => {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
 
-        const { title, description, problemFaced, techStack, githubLink, githubLinkBackend, liveLink, media } = req.body;
-        const techStackStr = JSON.stringify(techStack || []);
-        const mediaStr = JSON.stringify(media || []);
-
-        const sql = `INSERT INTO projects (title, description, problemFaced, techStack, githubLink, githubLinkBackend, liveLink, media) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-        const [result] = await db.execute(sql, [title || "", description || "", problemFaced || "", techStackStr, githubLink || "", githubLinkBackend || "", liveLink || "", mediaStr]);
-
-        res.status(201).json({ success: true, message: "Project added successfully!", insertId: result.insertId });
+        const insertId = await ProjectService.createProject(req.body);
+        res.status(201).json({ success: true, message: "Project added successfully!", insertId });
     } catch (error) {
         next(error);
     }
 };
 
+/**
+ * Updates an existing project.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 exports.updateProject = async (req, res, next) => {
     try {
         const errors = validationResult(req);
@@ -50,25 +60,22 @@ exports.updateProject = async (req, res, next) => {
             return res.status(400).json({ success: false, errors: errors.array() });
         }
 
-        const projectId = req.params.id;
-        const { title, description, problemFaced, techStack, githubLink, githubLinkBackend, liveLink, media } = req.body;
-
-        const techStackStr = JSON.stringify(techStack || []);
-        const mediaStr = JSON.stringify(media || []);
-
-        const sql = `UPDATE projects SET title=?, description=?, problemFaced=?, techStack=?, githubLink=?, githubLinkBackend=?, liveLink=?, media=? WHERE id=?`;
-        await db.execute(sql, [title || "", description || "", problemFaced || "", techStackStr, githubLink || "", githubLinkBackend || "", liveLink || "", mediaStr, projectId]);
-
+        await ProjectService.updateProject(req.params.id, req.body);
         res.status(200).json({ success: true, message: "Project updated successfully!" });
     } catch (error) {
         next(error);
     }
 };
 
+/**
+ * Deletes a project.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 exports.deleteProject = async (req, res, next) => {
     try {
-        const projectId = req.params.id;
-        await db.execute(`DELETE FROM projects WHERE id=?`, [projectId]);
+        await ProjectService.deleteProject(req.params.id);
         res.status(200).json({ success: true, message: "Project deleted successfully!" });
     } catch (error) {
         next(error);
