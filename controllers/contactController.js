@@ -6,7 +6,7 @@ exports.validateMessage = [
     body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email is required'),
     body('message').notEmpty().withMessage('Message cannot be empty'),
     body('websiteUrl').custom((value, { req }) => {
-        if (req.body.subject !== 'Full-Stack Web Development (New Build)' && !value) {
+        if (req.body.subject !== 'Enterprise Custom Web App (New Build)' && !value) {
             throw new Error('Website URL is required for this service.');
         }
         return true;
@@ -17,16 +17,18 @@ const nodemailer = require('nodemailer');
 
 const getDynamicReply = (subject) => {
     switch(subject) {
-        case 'Free 2026 Performance Check (Audit Report)':
-            return "Thank you for requesting a Free 2026 Performance Check! I will analyze your website's architecture, load times, and Core Web Vitals. You can expect a detailed, completely free audit report within 24-48 hours.";
-        case 'Speed Optimization & Performance Fixes (One-Time Project)':
-            return "Thanks for reaching out! Speed optimization is crucial for SEO and user retention. I will review your current metrics and get back to you with a strategy to make your site lightning fast. <br/><br/><em>Note: To ensure high quality, speed optimization projects typically start around $99 / ₹7,500, depending on the current state of your codebase.</em>";
+        case 'Free Technical Performance & SEO Audit':
+            return "Thank you for requesting a Free Technical Performance & SEO Audit! I will analyze your website's architecture, load times, Core Web Vitals, and search visibility. You can expect a detailed, completely free audit report within 24-48 hours.";
+        case 'Free System Architecture & Automation Audit':
+            return "Thanks for requesting a System Architecture & Automation Audit! I will review your current infrastructure and workflows to identify bottlenecks and opportunities for automation. You will receive a comprehensive free report shortly.";
+        case 'Free Sales Funnel, UX & Tracking Audit':
+            return "Thank you for your interest! I will analyze your user journey, conversion bottlenecks, and tracking setups (Analytics, Pixels) to help maximize your ROI. Your free audit report will be ready within 24-48 hours.";
         case 'Website Rebuild & Tech Stack Modernization':
             return "Modernizing your tech stack is a great step toward future-proofing your business. I'd love to learn more about your current limitations and discuss how we can rebuild your platform optimally. <br/><br/><em>Note: Full website rebuilds generally start at $299 / ₹20,000, varying based on complexity and scope.</em> Let's schedule a quick call to discuss your vision!";
-        case 'Custom Feature or API Integration':
-            return "Thanks for sharing your requirements! Custom integrations and feature development are my specialty. I'll review your project details and reach out shortly to discuss technical feasibility. <br/><br/><em>Note: Once I understand the full scope, I will share a tailored quote. Small custom features usually start from $49 / ₹4,000.</em>";
-        case 'Full-Stack Web Development (New Build)':
-            return "I'm excited to hear about your new project! Building from scratch allows us to lay down a perfect, scalable architecture. I will review your vision and contact you soon to schedule a discovery call. <br/><br/><em>Note: Complete full-stack web builds generally start at $499 / ₹35,000. An exact estimate will be provided after our initial discussion.</em>";
+        case 'Enterprise Custom Web App (New Build)':
+            return "I'm excited to hear about your new project! Building a custom enterprise app from scratch allows us to lay down a perfect, scalable architecture. I will review your vision and contact you soon to schedule a discovery call. <br/><br/><em>Note: Complete custom web builds generally start at $499 / ₹35,000. An exact estimate will be provided after our initial discussion.</em>";
+        case 'Complete Digital Infrastructure Overhaul (Full Transformation)':
+            return "This sounds like a massive and exciting transformation! A complete digital overhaul requires careful planning and flawless execution. I will review your details and reach out to schedule an in-depth strategy session.";
         default:
             return "Thank you for getting in touch! I have received your message and will get back to you as soon as possible.";
     }
@@ -43,7 +45,23 @@ exports.sendMessage = async (req, res, next) => {
         // 1. Save to Database
         // Note: phone column is used for contactHandle. syncDatabase.js automatically creates subject & websiteUrl.
         const sql = `INSERT INTO messages (name, email, phone, preference, subject, websiteUrl, message) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        await db.execute(sql, [name, email, contactHandle || "", preference || "", subject || null, websiteUrl || null, message]);
+        const [result] = await db.execute(sql, [name, email, contactHandle || "", preference || "", subject || null, websiteUrl || null, message]);
+
+        // Real-time update using Socket.IO
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('newContact', { 
+                id: result.insertId,
+                name, 
+                email, 
+                phone: contactHandle || "", 
+                preference: preference || "", 
+                subject: subject || null, 
+                websiteUrl: websiteUrl || null, 
+                message,
+                created_at: new Date()
+            });
+        }
 
         // 2. Send Response immediately (Don't make user wait for email to send)
         res.status(201).json({ success: true, message: "Message successfully sent to database!" });
@@ -115,7 +133,7 @@ exports.sendMessage = async (req, res, next) => {
                     `
                 };
 
-                const isPaidService = subject !== 'Free 2026 Performance Check (Audit Report)';
+                const isPaidService = !subject.startsWith('Free');
                 
                 const paymentTermsHTML = isPaidService ? `
                     <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0;">
@@ -198,6 +216,11 @@ exports.deleteMessage = async (req, res, next) => {
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: "Message not found" });
+        }
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('deleteContact', messageId);
         }
 
         res.status(200).json({ success: true, message: "Message deleted successfully!" });

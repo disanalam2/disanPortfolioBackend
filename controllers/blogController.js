@@ -74,6 +74,10 @@ exports.addBlog = async (req, res, next) => {
         }
 
         const insertId = await BlogService.createBlog(req.body);
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('newBlog', { id: insertId, ...req.body });
+        }
         res.status(201).json({ success: true, message: "Blog added successfully!", insertId });
     } catch (error) {
         // Handle duplicate slug
@@ -95,6 +99,10 @@ exports.updateBlog = async (req, res, next) => {
         }
 
         await BlogService.updateBlog(req.params.id, req.body);
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('updateBlog', { id: req.params.id, ...req.body });
+        }
         res.status(200).json({ success: true, message: "Blog updated successfully!" });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
@@ -110,6 +118,10 @@ exports.updateBlog = async (req, res, next) => {
 exports.deleteBlog = async (req, res, next) => {
     try {
         await BlogService.deleteBlog(req.params.id);
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('deleteBlog', req.params.id);
+        }
         res.status(200).json({ success: true, message: "Blog deleted successfully!" });
     } catch (error) {
         next(error);
