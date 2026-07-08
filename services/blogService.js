@@ -10,11 +10,7 @@ class BlogService {
      * @returns {Promise<Array>} Array of blogs.
      */
     static async getAllBlogs(admin = false) {
-        let query = 'SELECT * FROM blogs';
-        if (!admin) {
-            query += ' WHERE scheduledFor IS NULL OR scheduledFor <= NOW()';
-        }
-        query += ' ORDER BY created_at DESC';
+        let query = 'SELECT * FROM blogs ORDER BY created_at DESC';
         const [rows] = await db.query(query);
         return rows;
     }
