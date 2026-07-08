@@ -5,11 +5,17 @@ const db = require('../config/db');
  */
 class BlogService {
     /**
-     * Retrieves all blogs.
+     * Retrieves blogs.
+     * @param {boolean} admin - If true, retrieves all blogs including scheduled ones. If false, only retrieves published blogs.
      * @returns {Promise<Array>} Array of blogs.
      */
-    static async getAllBlogs() {
-        const [rows] = await db.query('SELECT * FROM blogs ORDER BY created_at DESC');
+    static async getAllBlogs(admin = false) {
+        let query = 'SELECT * FROM blogs';
+        if (!admin) {
+            query += ' WHERE scheduledFor IS NULL OR scheduledFor <= NOW()';
+        }
+        query += ' ORDER BY created_at DESC';
+        const [rows] = await db.query(query);
         return rows;
     }
 
@@ -21,6 +27,14 @@ class BlogService {
     static async getBlogBySlug(slug) {
         const [rows] = await db.query('SELECT * FROM blogs WHERE slug = ?', [slug]);
         return rows.length > 0 ? rows[0] : null;
+    }
+
+    /**
+     * Increments the view count of a blog.
+     * @param {string} slug 
+     */
+    static async incrementViewCount(slug) {
+        await db.execute('UPDATE blogs SET views = views + 1 WHERE slug = ?', [slug]);
     }
 
     /**
@@ -49,12 +63,15 @@ class BlogService {
      * @returns {Promise<number>} Inserted blog ID.
      */
     static async createBlog(blogData) {
-        let { title, slug, summary, content, thumbnail } = blogData;
+        let { title, slug, summary, content, thumbnail, scheduledFor } = blogData;
         slug = this.sanitizeSlug(slug) || this.sanitizeSlug(title);
         const readTime = this.calculateReadTime(content);
         
-        const sql = `INSERT INTO blogs (title, slug, summary, content, thumbnail, read_time) VALUES (?, ?, ?, ?, ?, ?)`;
-        const [result] = await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime]);
+        // Convert ISO string to Date object for mysql2 to handle timezones correctly
+        const scheduledTime = scheduledFor ? new Date(scheduledFor) : null;
+        
+        const sql = `INSERT INTO blogs (title, slug, summary, content, thumbnail, read_time, scheduledFor) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+        const [result] = await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime, scheduledTime]);
         return result.insertId;
     }
 
@@ -64,12 +81,15 @@ class BlogService {
      * @param {Object} blogData 
      */
     static async updateBlog(id, blogData) {
-        let { title, slug, summary, content, thumbnail } = blogData;
+        let { title, slug, summary, content, thumbnail, scheduledFor } = blogData;
         slug = this.sanitizeSlug(slug) || this.sanitizeSlug(title);
         const readTime = this.calculateReadTime(content);
 
-        const sql = `UPDATE blogs SET title=?, slug=?, summary=?, content=?, thumbnail=?, read_time=? WHERE id=?`;
-        await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime, id]);
+        // Convert ISO string to Date object for mysql2 to handle timezones correctly
+        const scheduledTime = scheduledFor ? new Date(scheduledFor) : null;
+
+        const sql = `UPDATE blogs SET title=?, slug=?, summary=?, content=?, thumbnail=?, read_time=?, scheduledFor=? WHERE id=?`;
+        await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime, scheduledTime, id]);
     }
 
     /**

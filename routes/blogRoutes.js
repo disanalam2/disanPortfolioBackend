@@ -24,6 +24,22 @@ router.get('/', blogController.getBlogs);
 
 /**
  * @swagger
+ * /api/blogs/admin:
+ *   get:
+ *     summary: Retrieve all blogs (including scheduled) for admin
+ *     tags: [Blogs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of blogs.
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/admin', verifyToken, blogController.getAdminBlogs);
+
+/**
+ * @swagger
  * /api/blogs/{slug}:
  *   get:
  *     summary: Retrieve a single blog by its slug URL
@@ -42,6 +58,24 @@ router.get('/', blogController.getBlogs);
  *         description: Blog not found
  */
 router.get('/:slug', blogController.getBlogBySlug);
+
+/**
+ * @swagger
+ * /api/blogs/{slug}/view:
+ *   post:
+ *     summary: Increment view count of a blog
+ *     tags: [Blogs]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: View counted
+ */
+router.post('/:slug/view', blogController.incrementBlogView);
 
 /**
  * @swagger

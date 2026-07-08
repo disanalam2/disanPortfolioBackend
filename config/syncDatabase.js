@@ -80,6 +80,8 @@ const syncDatabase = async () => {
               summary TEXT,
               content LONGTEXT NOT NULL,
               thumbnail LONGTEXT,
+              views INT DEFAULT 0,
+              scheduledFor DATETIME DEFAULT NULL,
               created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
               updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`
@@ -173,6 +175,22 @@ const syncDatabase = async () => {
             await db.execute("ALTER TABLE blogs ADD COLUMN seo_title VARCHAR(255) DEFAULT NULL;");
             await db.execute("ALTER TABLE blogs ADD COLUMN seo_description TEXT DEFAULT NULL;");
             console.log('✅ Columns seo_title and seo_description added to blogs successfully!');
+        }
+
+        // Check for 'views' in 'blogs'
+        const [blogViews] = await db.query("SHOW COLUMNS FROM blogs LIKE 'views'");
+        if (blogViews.length === 0) {
+            console.log('🔄 Adding missing column: views to blogs table...');
+            await db.execute("ALTER TABLE blogs ADD COLUMN views INT DEFAULT 0;");
+            console.log('✅ Column views added to blogs successfully!');
+        }
+
+        // Check for 'scheduledFor' in 'blogs'
+        const [blogScheduledFor] = await db.query("SHOW COLUMNS FROM blogs LIKE 'scheduledFor'");
+        if (blogScheduledFor.length === 0) {
+            console.log('🔄 Adding missing column: scheduledFor to blogs table...');
+            await db.execute("ALTER TABLE blogs ADD COLUMN scheduledFor DATETIME DEFAULT NULL;");
+            console.log('✅ Column scheduledFor added to blogs successfully!');
         }
 
     } catch (error) {

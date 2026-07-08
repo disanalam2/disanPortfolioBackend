@@ -12,32 +12,45 @@ exports.renderBlogSEO = async (req, res, next) => {
             return res.status(404).send('Blog not found');
         }
 
+        // Escape double quotes and newlines to prevent HTML attribute breakage
+        const escapeAttr = (str) => {
+            if (!str) return '';
+            return str
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/\n/g, ' ')
+                .replace(/\r/g, '');
+        };
+
+        const safeTitle = escapeAttr(blog.title);
+        const safeSummary = escapeAttr(blog.summary);
+
         // Create the raw HTML for the bot
         const html = `
             <!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
-                <title>${blog.title} - Disan Alam</title>
-                <meta name="description" content="${blog.summary}">
+                <title>${safeTitle} - Disan Alam</title>
+                <meta name="description" content="${safeSummary}">
                 
                 <!-- Open Graph (Facebook, WhatsApp, LinkedIn) -->
                 <meta property="og:type" content="article">
-                <meta property="og:title" content="${blog.title} - Disan Alam">
-                <meta property="og:description" content="${blog.summary}">
+                <meta property="og:title" content="${safeTitle} - Disan Alam">
+                <meta property="og:description" content="${safeSummary}">
                 <meta property="og:image" content="${blog.thumbnail || 'https://disanalam.me/banner.jpeg'}">
                 <meta property="og:url" content="https://disanalam.me/blogs/${blog.slug}">
                 
                 <!-- Twitter Card -->
                 <meta name="twitter:card" content="summary_large_image">
-                <meta name="twitter:title" content="${blog.title} - Disan Alam">
-                <meta name="twitter:description" content="${blog.summary}">
+                <meta name="twitter:title" content="${safeTitle} - Disan Alam">
+                <meta name="twitter:description" content="${safeSummary}">
                 <meta name="twitter:image" content="${blog.thumbnail || 'https://disanalam.me/banner.jpeg'}">
             </head>
             <body>
-                <h1>${blog.title}</h1>
-                <p>${blog.summary}</p>
-                <img src="${blog.thumbnail || 'https://disanalam.me/banner.jpeg'}" alt="${blog.title}">
+                <h1>${safeTitle}</h1>
+                <p>${safeSummary}</p>
+                <img src="${blog.thumbnail || 'https://disanalam.me/banner.jpeg'}" alt="${safeTitle}">
             </body>
             </html>
         `;

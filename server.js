@@ -66,9 +66,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// Clear cache whenever data is modified
+// Clear cache whenever data is modified, but NOT on blog view increments
 app.use((req, res, next) => {
-    if (['POST', 'PUT', 'DELETE'].includes(req.method) && !req.originalUrl.includes('/api/auth')) {
+    if (['POST', 'PUT', 'DELETE'].includes(req.method) && 
+        !req.originalUrl.includes('/api/auth') && 
+        !req.originalUrl.includes('/view')) {
         clearCache(req, res, next);
     } else {
         next();

@@ -13,11 +13,23 @@ exports.validateBlog = [
 ];
 
 /**
- * Retrieves all blogs.
+ * Retrieves all published blogs.
  */
 exports.getBlogs = async (req, res, next) => {
     try {
-        const blogs = await BlogService.getAllBlogs();
+        const blogs = await BlogService.getAllBlogs(false);
+        res.status(200).json(blogs);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Retrieves all blogs (including scheduled ones) for admin.
+ */
+exports.getAdminBlogs = async (req, res, next) => {
+    try {
+        const blogs = await BlogService.getAllBlogs(true);
         res.status(200).json(blogs);
     } catch (error) {
         next(error);
@@ -34,6 +46,18 @@ exports.getBlogBySlug = async (req, res, next) => {
             return res.status(404).json({ success: false, message: "Blog not found" });
         }
         res.status(200).json(blog);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Increments the view count for a single blog by slug.
+ */
+exports.incrementBlogView = async (req, res, next) => {
+    try {
+        await BlogService.incrementViewCount(req.params.slug);
+        res.status(200).json({ success: true, message: "View counted" });
     } catch (error) {
         next(error);
     }
