@@ -1,8 +1,9 @@
 const axios = require('axios');
+const fs = require('fs');
 const { getDb } = require('../config/emailDbWrapper');
 const { findContactDetailsOnWebsite, deepAuditWebsite } = require('../utils/scraperHelpers');
 const { generateColdEmail } = require('../worker/aiDrafter');
-
+const { generateAuditPDF } = require('../utils/pdfGenerator');
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 // 1. Scrape Google Places for Local Businesses
@@ -140,5 +141,42 @@ exports.startScraper = async (req, res) => {
     } catch (error) {
         console.error("Scraper Controller Error:", error);
         res.status(500).json({ error: "Failed to run scraper. " + error.message });
+    }
+};
+
+// 4. View PDF Audit Report Inline
+exports.viewAuditPDF = async (req, res) => {
+    try {
+        const { leadId } = req.params;
+        const db = await getDb();
+        
+        const lead = await db.get('SELECT business_name, website_issues FROM email_leads WHERE id = ?', [leadId]);
+        if (!lead) {
+            return res.status(404).send('Lead not found');
+        }
+        
+        if (!lead.website_issues) {
+            return res.status(400).send('No website issues / audit found for this lead.');
+        }
+
+        const pdfData = await generateAuditPDF(lead.business_name, lead.website_issues);
+        
+        // Serve the PDF inline in the browser
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${pdfData.fileName}"`);
+        
+        const stream = fs.createReadStream(pdfData.filePath);
+        stream.pipe(res);
+        
+        stream.on('end', () => {
+            // Delete temp file after serving
+            fs.unlink(pdfData.filePath, (err) => {
+                if (err) console.error("Failed to delete temp PDF:", err);
+            });
+        });
+        
+    } catch (error) {
+        console.error("View PDF Error:", error);
+        res.status(500).send("Failed to generate PDF. " + error.message);
     }
 };
