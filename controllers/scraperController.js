@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { getDb } = require('../config/emailDbWrapper');
-const { findEmailOnWebsite, deepAuditWebsite } = require('../utils/scraperHelpers');
+const { findContactDetailsOnWebsite, deepAuditWebsite } = require('../utils/scraperHelpers');
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
@@ -77,8 +77,12 @@ exports.startScraper = async (req, res) => {
                 leadType = 'bad_website'; // Assume bad until proven good
                 
                 console.log(`Auditing and scraping email for: ${lead.website}`);
-                // 1. Try to find email
-                finalEmail = await findEmailOnWebsite(lead.website);
+                // 1. Try to find email and phone
+                const contactData = await findContactDetailsOnWebsite(lead.website);
+                finalEmail = contactData.emails;
+                if (!lead.phone && contactData.phones) {
+                    lead.phone = contactData.phones;
+                }
                 
                 // 2. Audit Website
                 const { auditData } = await deepAuditWebsite(lead.website);
