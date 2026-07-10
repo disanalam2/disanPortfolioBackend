@@ -64,10 +64,10 @@ exports.startScraper = async (req, res) => {
         const processedLeads = [];
         const db = await getDb();
         
-        for (const lead of rawLeads) {
+        await Promise.all(rawLeads.map(async (lead) => {
             // Check if we already have this business to avoid duplicates
             const existing = await db.get('SELECT id FROM email_leads WHERE business_name = ? LIMIT 1', [lead.business_name]);
-            if (existing) continue;
+            if (existing) return;
 
             let finalEmail = '';
             let auditReport = null;
@@ -130,7 +130,7 @@ exports.startScraper = async (req, res) => {
                 lead_type: leadType,
                 audit_report: auditReport
             });
-        }
+        }));
 
         res.json({
             message: `Successfully scraped ${processedLeads.length} new leads!`,
