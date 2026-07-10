@@ -508,6 +508,12 @@ async function processLeadJob(payload) {
 
     const drafts = await generateColdEmail(lead.name, niche, leadType, websiteIssues, abVersion, contextPrefix + socialMediaContext + ". " + videoContext + ". " + prContext, intentAnalysis, lead.rating, screenshotUrl, availableDomain, competitors, decisionMakerName);
 
+    // FORCE append the links to ensure Gemini didn't miss them
+    const linkAppendix = `\n\n---\n📽️ Watch your custom video audit here: ${dynamicVideoLink}\n🏆 View your PR feature here: ${dynamicPrLink}`;
+    drafts.main = (drafts.main || '') + linkAppendix;
+    if (drafts.follow_up_1) drafts.follow_up_1 += linkAppendix;
+    if (drafts.follow_up_2) drafts.follow_up_2 += linkAppendix;
+
     let priorityScore = 0;
     const highValueNiches = ['dentist', 'lawyer', 'surgeon', 'real estate', 'saas', 'wholesaler', 'dealer', 'distributor', 'manufacturer', 'clinic', 'hospital'];
     const nicheLower = (niche || '').toLowerCase();

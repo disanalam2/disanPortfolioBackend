@@ -3,6 +3,8 @@ const router = express.Router();
 const { getDb } = require('../config/emailDbWrapper');
 const { sendMailToLead } = require('../utils/mailer');
 const authMiddleware = require('../middleware/authMiddleware');
+const { generateAuditPDF } = require('../utils/pdfGenerator');
+const fs = require('fs');
 
 // Get all leads
 router.get('/', authMiddleware, async (req, res) => {
@@ -136,6 +138,32 @@ router.get('/pitch/:uuid', async (req, res) => {
     } catch (error) {
         console.error('Error fetching pitch data:', error);
         res.status(500).json({ error: 'Failed to fetch pitch data' });
+    }
+});
+
+// Generate and serve PDF
+router.get('/:id/pdf', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const db = await getDb();
+        const lead = await db.get('SELECT business_name, website_issues FROM email_leads WHERE id = ?', [id]);
+        
+        if (!lead) {
+            return res.status(404).json({ error: 'Lead not found.' });
+        }
+        
+        const { filePath, fileName } = await generateAuditPDF(lead.business_name, lead.website_issues);
+        
+        res.download(filePath, fileName, (err) => {
+            if (err) {
+                console.error("Error sending PDF:", err);
+            }
+            // clean up file after sending
+            try { fs.unlinkSync(filePath); } catch (e) {}
+        });
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        res.status(500).json({ error: 'Failed to generate PDF' });
     }
 });
 
