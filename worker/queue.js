@@ -115,8 +115,8 @@ async function processJobsLoop() {
                 // Mark completed
                 await completeJob(job.id);
 
-                console.log(`Job ${job.id} done. Waiting 10 minutes to prevent IP blocks...`);
-                await new Promise(resolve => setTimeout(resolve, 600000)); // 10 minutes sleep
+                console.log(`Job ${job.id} done. Waiting 15 seconds before next job to respect API limits...`);
+                await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds sleep
             } else {
                 // Sleep for 3 seconds if no jobs found
                 await new Promise(resolve => setTimeout(resolve, 3000));

@@ -3,6 +3,7 @@ const fs = require('fs');
 const { getDb } = require('../config/emailDbWrapper');
 const { findContactDetailsOnWebsite, deepAuditWebsite } = require('../utils/scraperHelpers');
 const { generateColdEmail } = require('../worker/aiDrafter');
+const { runLeadGenerationJob } = require('../worker/leadGenerator');
 const { generateAuditPDF } = require('../utils/pdfGenerator');
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
@@ -178,5 +179,36 @@ exports.viewAuditPDF = async (req, res) => {
     } catch (error) {
         console.error("View PDF Error:", error);
         res.status(500).send("Failed to generate PDF. " + error.message);
+    }
+};
+
+// 5. Trigger Background Lead Generation Job Manually
+exports.triggerBackgroundScraper = async (req, res) => {
+    try {
+        console.log('Manually triggering background lead generation job...');
+        runLeadGenerationJob().catch(console.error); // Run async, don't await
+        res.json({ message: 'Background scraper started! Check queue status to monitor progress.' });
+    } catch (error) {
+        console.error("Trigger Error:", error);
+        res.status(500).json({ error: "Failed to trigger background job." });
+    }
+};
+
+// 6. Get AI Queue Status
+exports.getQueueStatus = async (req, res) => {
+    try {
+        const db = await getDb();
+        const pending = await db.get("SELECT COUNT(*) as count FROM email_jobs WHERE status = 'pending'");
+        const processing = await db.get("SELECT COUNT(*) as count FROM email_jobs WHERE status = 'processing'");
+        const failed = await db.get("SELECT COUNT(*) as count FROM email_jobs WHERE status = 'failed'");
+        
+        res.json({
+            pending: pending ? pending.count : 0,
+            processing: processing ? processing.count : 0,
+            failed: failed ? failed.count : 0
+        });
+    } catch (error) {
+        console.error("Queue Status Error:", error);
+        res.status(500).json({ error: "Failed to get queue status." });
     }
 };

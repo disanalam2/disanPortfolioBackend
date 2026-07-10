@@ -7,30 +7,55 @@ const resolveDns = promisify(dns.resolve);
 // Scrape Website for Maximum Contact Details (Emails & Phones)
 const findContactDetailsOnWebsite = async (url) => {
     if (!url) return { emails: '', phones: '' };
-    try {
-        const fullUrl = url.startsWith('http') ? url : `http://${url}`;
-        const response = await axios.get(fullUrl, { timeout: 8000 });
-        const html = response.data;
-        
-        // Extract Emails
-        const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
-        const foundEmails = html.match(emailRegex) || [];
-        const validEmails = [...new Set(foundEmails.filter(e => !e.endsWith('.png') && !e.endsWith('.jpg') && !e.includes('sentry') && !e.includes('wix') && !e.includes('sentry.io')))];
-        
-        // Extract Phones (Indian + International formats commonly used in contact pages)
-        const phoneRegex = /(?:(?:\+|00)91\s*[-\s]?)?(?:\d{10}|\d{5}\s*\d{5}|\d{3}\s*\d{3}\s*\d{4}|\d{4}\s*\d{4}\s*\d{2}|\d{3}-\d{4}-\d{3})/g;
-        const foundPhones = html.match(phoneRegex) || [];
-        // Clean up and filter valid length numbers
-        const cleanPhones = [...new Set(foundPhones.map(p => p.replace(/[^\d+]/g, '')).filter(p => p.length >= 10))];
-
-        return {
-            emails: validEmails.join(', '),
-            phones: cleanPhones.join(', ')
-        };
-    } catch (error) {
-        console.log(`Could not scrape contact details from ${url}:`, error.message);
-        return { emails: '', phones: '' };
+    
+    let allValidEmails = new Set();
+    let allCleanPhones = new Set();
+    
+    const fullUrl = url.startsWith('http') ? url : `http://${url}`;
+    // Base URL without trailing slash for appending paths
+    const baseUrl = fullUrl.replace(/\/$/, '');
+    
+    const pathsToCheck = ['', '/contact', '/contact-us', '/about', '/about-us'];
+    
+    for (const path of pathsToCheck) {
+        try {
+            const targetUrl = `${baseUrl}${path}`;
+            console.log(`Scraping for contacts on: ${targetUrl}`);
+            const response = await axios.get(targetUrl, { timeout: 10000 });
+            const html = response.data;
+            
+            // Extract Emails
+            const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
+            const foundEmails = html.match(emailRegex) || [];
+            foundEmails.forEach(e => {
+                if (!e.endsWith('.png') && !e.endsWith('.jpg') && !e.includes('sentry') && !e.includes('wix') && !e.includes('sentry.io')) {
+                    allValidEmails.add(e.toLowerCase());
+                }
+            });
+            
+            // Extract Phones (Indian + International formats commonly used in contact pages)
+            const phoneRegex = /(?:(?:\+|00)91\s*[-\s]?)?(?:\d{10}|\d{5}\s*\d{5}|\d{3}\s*\d{3}\s*\d{4}|\d{4}\s*\d{4}\s*\d{2}|\d{3}-\d{4}-\d{3})/g;
+            const foundPhones = html.match(phoneRegex) || [];
+            foundPhones.forEach(p => {
+                const clean = p.replace(/[^\d+]/g, '');
+                if (clean.length >= 10 && clean.length <= 15) {
+                    allCleanPhones.add(clean);
+                }
+            });
+            
+            // If we found both email and phone, we can stop early to save time
+            if (allValidEmails.size > 0 && allCleanPhones.size > 0) {
+                break;
+            }
+        } catch (error) {
+            console.log(`Could not scrape contact details from ${baseUrl}${path}:`, error.message);
+        }
     }
+
+    return {
+        emails: Array.from(allValidEmails).join(', '),
+        phones: Array.from(allCleanPhones).join(', ')
+    };
 };
 
 // Deep Website Audit (PageSpeed & SEO)

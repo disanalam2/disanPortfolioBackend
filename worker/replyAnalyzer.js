@@ -57,14 +57,23 @@ async function checkReplies() {
                         const lead = await db.get("SELECT * FROM email_leads WHERE email = ?", [senderEmail]);
                         
                         if (lead) {
+                            // Trim quoted history from email body
+                            // Matches common email history markers like "On [Date], [Name] wrote:", "From:", ">", or "-----Original Message-----"
+                            let trimmedBody = bodyText;
+                            const historyRegex = /(On\s+.*?\bwrote:)|(>.*)|(From:.*)|(-----Original Message-----)/i;
+                            const match = trimmedBody.match(historyRegex);
+                            if (match) {
+                                trimmedBody = trimmedBody.substring(0, match.index).trim();
+                            }
+                            
                             // It's a reply from a lead! Let's analyze it with AI.
                             const prompt = `
-                            You are an AI sales assistant. Read the following email reply from a client.
+                            You are an AI sales assistant. Read the following fresh email reply from a client.
                             Determine if the reply is POSITIVE (showing interest, asking for a meeting, asking for details) or NEGATIVE (not interested, stop emailing, unsubscribe, angry).
                             Respond with exactly one word: POSITIVE or NEGATIVE.
                             
                             Email Subject: ${subject}
-                            Email Body: ${bodyText}
+                            Email Body: ${trimmedBody || bodyText}
                             `;
                             
                             const aiResponse = await model.generateContent(prompt);

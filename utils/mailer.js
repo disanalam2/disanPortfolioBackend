@@ -55,7 +55,7 @@ async function sendMailToLead(leadId, customDraft = null, subject = null, isFoll
             You are receiving this email because we identified your business might benefit from our services.<br>
             <a href="${process.env.API_URL || 'http://localhost:5000'}/api/track/unsubscribe/${lead.uuid}" style="color: #6b7280; text-decoration: underline;">Unsubscribe</a> from future communications.
         </div>
-        <img src="${process.env.API_URL || 'http://localhost:5000'}/api/track/open/${lead.uuid}" width="1" height="1" style="display:none;" />
+        <img src="${process.env.API_URL || 'http://localhost:5000'}/api/track/open/${lead.uuid}" alt="" style="width: 1px; height: 1px; border: 0; outline: none;" />
     `;
 
     const finalSubject = subject || (isFollowUp ? `Following up: ${lead.business_name}` : `Grow your business online, ${lead.business_name}`);

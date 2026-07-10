@@ -423,7 +423,15 @@ async function processLeadJob(payload) {
     }
 
     if (!leadEmail && !leadPhone) {
-        throw new Error(`No valid email or phone found for ${lead.name}. Job failed.`);
+        const failedUuid = crypto.randomUUID();
+        await db.run(
+            `INSERT INTO email_leads (
+                uuid, business_name, niche, address, website, source, status, priority_score
+            ) VALUES (?, ?, ?, ?, ?, ?, 'failed_no_contact', -1)`,
+            [failedUuid, lead.name, lead.amenity, lead.address, lead.website, "Failed Contact Extraction"]
+        );
+        console.log(`Job failed gracefully. No contact found for ${lead.name}. Saved to dashboard for manual review.`);
+        return;
     }
 
     // Check if they previously contacted via portfolio form
