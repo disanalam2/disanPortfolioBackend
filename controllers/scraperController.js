@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { getDb } = require('../config/emailDbWrapper');
 const { findContactDetailsOnWebsite, deepAuditWebsite } = require('../utils/scraperHelpers');
+const { generateColdEmail } = require('../worker/aiDrafter');
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
@@ -89,10 +90,22 @@ exports.startScraper = async (req, res) => {
                 auditReport = auditData;
             }
 
+            // 3. Generate AI Draft
+            const drafts = await generateColdEmail(
+                lead.business_name, 
+                niche, 
+                leadType, 
+                auditReport ? JSON.stringify(auditReport) : null,
+                'A',
+                '',
+                '',
+                lead.rating || null
+            );
+
             // Save to Database
             const insertResult = await db.run(
-                `INSERT INTO email_leads (uuid, business_name, address, phone, website, email, source, lead_type, website_issues, status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO email_leads (uuid, business_name, address, phone, website, email, source, lead_type, website_issues, email_draft, follow_up_1_draft, follow_up_2_draft, status) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     require('crypto').randomUUID(),
                     lead.business_name,
@@ -103,7 +116,10 @@ exports.startScraper = async (req, res) => {
                     lead.source,
                     leadType,
                     auditReport ? JSON.stringify(auditReport) : null,
-                    'pending'
+                    drafts.main,
+                    drafts.follow_up_1,
+                    drafts.follow_up_2,
+                    'draft_ready'
                 ]
             );
 
