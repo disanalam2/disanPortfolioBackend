@@ -20,7 +20,24 @@ const swaggerSpec = require('./config/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Middlewares
-app.use(helmet()); // Secures HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  }
+})); // Secures HTTP headers with Strict CSP and HSTS
 app.use(compression()); // Compresses API responses for faster load times
 app.use(morgan('dev')); // API Request Logging
 
@@ -78,8 +95,14 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Login pe brute-force rokne ke liye rate limiter
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Max 10 attempts per IP
+  max: 5, // Max 5 attempts per IP
   message: { success: false, message: 'Too many login attempts, please try again later.' }
+});
+
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Max 100 requests per IP per 15 min for dashboard
+  message: { success: false, message: 'Too many requests, please try again later.' }
 });
 
 // API Routes connect kar rahe hain
@@ -115,12 +138,21 @@ app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
 app.use('/api/contact', contactLimiter, require('./routes/contactRoutes'));
 app.use('/api/about', require('./routes/aboutRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
+app.use('/api/scraper', adminLimiter, require('./routes/scraperRoutes'));
 app.use('/api/skills', require('./routes/skillRoutes'));
 app.use('/api/experience', require('./routes/experienceRoutes'));
 app.use('/api/education', require('./routes/educationRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
+
+// Email Automation Routes
+app.use('/api/leads', adminLimiter, require('./routes/emailLeads'));
+app.use('/api/track', require('./routes/emailTrack'));
+app.use('/api/settings', adminLimiter, require('./routes/emailSettings'));
+app.use('/api/analytics', adminLimiter, require('./routes/emailAnalytics'));
+app.use('/api/inbox', adminLimiter, require('./routes/emailInbox'));
+app.use('/api/mockup', require('./routes/emailMockup'));
 
 const sitemapController = require('./controllers/sitemapController');
 const llmsController = require('./controllers/llmsController');
@@ -143,6 +175,15 @@ app.get('/api/seo/blogs/:slug', seoController.renderBlogSEO);
 // Error Handling Middleware (sabse last me hona chahiye)
 app.use(errorHandler);
 
+// Global Error Handlers to keep the backend powerful and alive
+process.on('uncaughtException', (err) => {
+    console.error('🔥 UNCAUGHT EXCEPTION: Backend remains alive, but please check:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('🔥 UNHANDLED REJECTION at:', promise, 'reason:', reason);
+});
+
 // Server Start Karein
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, async () => {
@@ -154,6 +195,10 @@ server.listen(PORT, async () => {
         
         // Auto-sync database schema
         await syncDatabase();
+        
+        // Initialize Background Worker for Lead Generation
+        const worker = require('./worker/worker');
+        worker.initWorker();
     } catch (error) {
         console.error('❌ Database Connection Error:', error.message);
     }

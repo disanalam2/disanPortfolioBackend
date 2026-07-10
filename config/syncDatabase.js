@@ -4,6 +4,16 @@ const syncDatabase = async () => {
     console.log('🔄 Checking database schema and synchronizing...');
     try {
         const queries = [
+            `CREATE TABLE IF NOT EXISTS email_inbox (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              account_email VARCHAR(255) NOT NULL,
+              sender_email VARCHAR(255) NOT NULL,
+              subject TEXT,
+              body TEXT,
+              is_read TINYINT(1) DEFAULT 0,
+              received_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
+
             `CREATE TABLE IF NOT EXISTS about (
               id INT AUTO_INCREMENT PRIMARY KEY,
               photo LONGTEXT,
@@ -84,6 +94,66 @@ const syncDatabase = async () => {
               scheduledFor DATETIME DEFAULT NULL,
               created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
               updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
+
+            `CREATE TABLE IF NOT EXISTS email_leads (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              uuid VARCHAR(36) UNIQUE,
+              business_name VARCHAR(255) NOT NULL,
+              niche VARCHAR(255),
+              address TEXT,
+              email VARCHAR(255),
+              phone VARCHAR(255),
+              website TEXT,
+              source VARCHAR(255),
+              email_draft TEXT,
+              lead_type VARCHAR(50) DEFAULT 'no_website',
+              website_issues TEXT,
+              status VARCHAR(50) DEFAULT 'pending',
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              opened TINYINT(1) DEFAULT 0,
+              opened_at DATETIME,
+              screenshot_url TEXT,
+              ab_version VARCHAR(10) DEFAULT 'A',
+              is_unsubscribed TINYINT(1) DEFAULT 0,
+              clicked TINYINT(1) DEFAULT 0,
+              clicked_at DATETIME,
+              conversion_type VARCHAR(100),
+              follow_up_1_draft TEXT,
+              follow_up_2_draft TEXT,
+              follow_up_step INT DEFAULT 0,
+              last_contacted_at DATETIME,
+              timezone VARCHAR(100) DEFAULT 'Asia/Kolkata',
+              social_media_context TEXT
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
+
+            `CREATE TABLE IF NOT EXISTS email_search_state (
+              id INT PRIMARY KEY,
+              current_location_index INT DEFAULT 0,
+              current_phase INT DEFAULT 1
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
+
+            `CREATE TABLE IF NOT EXISTS email_accounts (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              email VARCHAR(255) NOT NULL UNIQUE,
+              password VARCHAR(255) NOT NULL,
+              host VARCHAR(255) DEFAULT 'smtp.hostinger.com',
+              port INT DEFAULT 465,
+              daily_sent_count INT DEFAULT 0,
+              last_used DATETIME DEFAULT CURRENT_TIMESTAMP,
+              is_active TINYINT(1) DEFAULT 1
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
+
+            `CREATE TABLE IF NOT EXISTS email_jobs (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              type VARCHAR(100) NOT NULL,
+              payload TEXT,
+              status VARCHAR(50) DEFAULT 'pending',
+              retries INT DEFAULT 0,
+              locked_until DATETIME,
+              error TEXT,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`
         ];
 
@@ -191,6 +261,75 @@ const syncDatabase = async () => {
             console.log('🔄 Adding missing column: scheduledFor to blogs table...');
             await db.execute("ALTER TABLE blogs ADD COLUMN scheduledFor DATETIME DEFAULT NULL;");
             console.log('✅ Column scheduledFor added to blogs successfully!');
+        }
+
+        // --- Email Leads v2 Auto-Enhancement ---
+        const [emailLeadsCol] = await db.query("SHOW COLUMNS FROM email_leads LIKE 'follow_up_1_draft'");
+        if (emailLeadsCol.length === 0) {
+            console.log('🔄 Adding missing columns for V2 to email_leads table...');
+            await db.execute("ALTER TABLE email_leads ADD COLUMN follow_up_1_draft TEXT;");
+            await db.execute("ALTER TABLE email_leads ADD COLUMN follow_up_2_draft TEXT;");
+            await db.execute("ALTER TABLE email_leads ADD COLUMN follow_up_step INT DEFAULT 0;");
+            await db.execute("ALTER TABLE email_leads ADD COLUMN last_contacted_at DATETIME;");
+            await db.execute("ALTER TABLE email_leads ADD COLUMN timezone VARCHAR(100) DEFAULT 'Asia/Kolkata';");
+            await db.execute("ALTER TABLE email_leads ADD COLUMN social_media_context TEXT;");
+            console.log('✅ Columns for V2 added to email_leads successfully!');
+        }
+
+        // --- Email Leads v3 Auto-Enhancement (UUID) ---
+        const [uuidCol] = await db.query("SHOW COLUMNS FROM email_leads LIKE 'uuid'");
+        if (uuidCol.length === 0) {
+            console.log('🔄 Adding missing column: uuid to email_leads table...');
+            await db.execute("ALTER TABLE email_leads ADD COLUMN uuid VARCHAR(36) UNIQUE;");
+            // Fill existing rows with UUID
+            const leads = await db.query("SELECT id FROM email_leads WHERE uuid IS NULL");
+            const crypto = require('crypto');
+            for (let i = 0; i < leads[0].length; i++) {
+                await db.execute("UPDATE email_leads SET uuid = ? WHERE id = ?", [crypto.randomUUID(), leads[0][i].id]);
+            }
+            console.log('✅ Column uuid added and populated successfully!');
+        }
+
+        // --- Email Leads Smart Inbox Enhancement (last_reply_text) ---
+        const [replyCol] = await db.query("SHOW COLUMNS FROM email_leads LIKE 'last_reply_text'");
+        if (replyCol.length === 0) {
+            console.log('🔄 Adding missing column: last_reply_text to email_leads table...');
+            await db.execute("ALTER TABLE email_leads ADD COLUMN last_reply_text TEXT;");
+            console.log('✅ Column last_reply_text added to email_leads successfully!');
+        }
+
+        // --- Email Leads Omni-Channel Enhancement (intent_analysis) ---
+        const [intentCol] = await db.query("SHOW COLUMNS FROM email_leads LIKE 'intent_analysis'");
+        if (intentCol.length === 0) {
+            console.log('🔄 Adding missing column: intent_analysis to email_leads table...');
+            await db.execute("ALTER TABLE email_leads ADD COLUMN intent_analysis TEXT;");
+            console.log('✅ Column intent_analysis added to email_leads successfully!');
+        }
+
+        // --- Email Accounts Soft Delete Enhancement ---
+        const [emailAccDeletedCol] = await db.query("SHOW COLUMNS FROM email_accounts LIKE 'deleted'");
+        if (emailAccDeletedCol.length === 0) {
+            console.log('🔄 Adding missing column: deleted to email_accounts table...');
+            await db.execute("ALTER TABLE email_accounts ADD COLUMN deleted TINYINT(1) DEFAULT 0;");
+            console.log('✅ Column deleted added to email_accounts successfully!');
+        }
+
+        try {
+            await db.query(`ALTER TABLE email_leads ADD COLUMN is_hot TINYINT(1) DEFAULT 0;`);
+        } catch (e) {
+            // Ignore error if column already exists
+        }
+        
+        try {
+            await db.query(`ALTER TABLE email_leads ADD COLUMN priority_score INT DEFAULT 0;`);
+        } catch (e) {
+            // Ignore error if column already exists
+        }
+
+        // Initialize email search state if not exists
+        const [state] = await db.query('SELECT * FROM email_search_state WHERE id = 1');
+        if (state.length === 0) {
+            await db.execute('INSERT INTO email_search_state (id, current_location_index, current_phase) VALUES (1, 0, 1)');
         }
 
     } catch (error) {

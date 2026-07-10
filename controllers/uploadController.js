@@ -32,11 +32,11 @@ exports.uploadFile = async (req, res, next) => {
         let fileBuffer = req.file.buffer;
         let contentType = req.file.mimetype;
         
-        // Agar image hai toh compress karo (WebP format me convert karke)
+        // Image highly compressed for S3 storage optimization
         if (isImage) {
             fileBuffer = await sharp(req.file.buffer)
-                .resize({ width: 1200, withoutEnlargement: true }) // Max width 1200px
-                .webp({ quality: 80 }) // 80% quality compression
+                .resize({ width: 1000, withoutEnlargement: true }) // Reduced from 1200 to 1000
+                .webp({ quality: 60, effort: 6 }) // Heavily optimized WebP (60% quality, max effort)
                 .toBuffer();
             contentType = 'image/webp';
         }
