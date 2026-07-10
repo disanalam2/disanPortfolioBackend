@@ -110,7 +110,13 @@ const deepAuditWebsite = async (url) => {
             return { auditData, isBad: true }; // Immediately return as a bad/dead website
         }
         
-        auditData.ssl_issue = true;
+        // Only set ssl_issue to true if it's an actual certificate error, 
+        // or if it's not an HTTPS link.
+        if (error.code && (error.code.includes('CERT') || error.code.includes('SSL') || error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE')) {
+            auditData.ssl_issue = true;
+        } else {
+            auditData.ssl_issue = !url.includes('https');
+        }
     }
 
     // Determine if website is bad enough to pitch
