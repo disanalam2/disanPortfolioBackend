@@ -181,8 +181,12 @@ async function generateManualAuditReport(url, auditData) {
         Here is the technical audit data:
         ${JSON.stringify(auditData, null, 2)}
         
+        CRITICAL RULES FOR WRITING THE REPORT:
+        - If "speed_score" and "lcp" are null, DO NOT mention anything about website speed, slowness, or timeouts. It simply means our automated speed test was blocked by their server. Only discuss the other issues present in the data.
+        - Only mention issues that are explicitly flagged as bad in the data (e.g., missing_seo: true, no_tracking: true). Do not invent problems.
+        
         Write a detailed, professional, and convincing report for the client (business owner) explaining:
-        1. "Kya Problem Hai" (What are the problems with their website based on this data, e.g. Speed, SEO, Mobile Responsiveness, SSL, No Tracking). Explain these technical issues in simple terms so a business owner understands why they are losing money or customers.
+        1. "Kya Problem Hai" (What are the problems with their website based ONLY on the bad data points). Explain these technical issues in simple terms so a business owner understands why they are losing money or customers.
         2. "Uska Solution Kya Hai" (How to fix it). Pitch that our digital agency can completely overhaul this, build a modern, fast, SEO-optimized and mobile-responsive website.
         
         Format the response in a very readable way with bullet points or clear headings. The tone should be consultative, professional, and slightly urgent (FOMO), emphasizing that they are losing local customers to competitors. 

@@ -77,7 +77,14 @@ const deepAuditWebsite = async (url) => {
 
     // A. Google PageSpeed API (Isolated to prevent timeout failing the rest)
     try {
-        const pagespeedUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(fullUrl)}&strategy=mobile`;
+        // Use the existing Google API key from .env to avoid rate limits/blocks
+        let apiKeyParam = '';
+        if (process.env.GOOGLE_PLACES_API_KEY) {
+            const cleanKey = process.env.GOOGLE_PLACES_API_KEY.replace(/['"]/g, '');
+            apiKeyParam = `&key=${cleanKey}`;
+        }
+        
+        const pagespeedUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(fullUrl)}&strategy=mobile${apiKeyParam}`;
         const psResponse = await axios.get(pagespeedUrl, { timeout: 30000 }); // Increased timeout
         
         const lighthouse = psResponse.data.lighthouseResult;
@@ -90,7 +97,8 @@ const deepAuditWebsite = async (url) => {
         }
     } catch (psError) {
         console.error(`PageSpeed API failed for ${fullUrl}:`, psError.message);
-        auditData.lcp = 'N/A (Test Timeout)';
+        auditData.speed_score = null;
+        auditData.lcp = null;
     }
 
     try {
