@@ -18,8 +18,15 @@ function initWorker() {
 // Run the fetching job every 12 hours (or modify as needed)
 // This will just fetch new leads from OSM and ENQUEUE them.
 cron.schedule('0 */12 * * *', async () => {
-    console.log('--- Starting Scheduled Lead Fetching Job ---');
     try {
+        const db = await getDb();
+        const state = await db.get('SELECT is_active FROM email_search_state WHERE id = 1');
+        if (state && state.is_active === 0) {
+            console.log('--- Automated Lead Fetching Job is currently STOPPED by admin ---');
+            return;
+        }
+
+        console.log('--- Starting Scheduled Lead Fetching Job ---');
         await runLeadGenerationJob();
         console.log('--- Lead Fetching Job Completed ---');
     } catch (error) {

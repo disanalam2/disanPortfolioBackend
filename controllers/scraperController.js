@@ -212,3 +212,29 @@ exports.getQueueStatus = async (req, res) => {
         res.status(500).json({ error: "Failed to get queue status." });
     }
 };
+
+// 7. Get Auto Scraper Status
+exports.getAutoScraperStatus = async (req, res) => {
+    try {
+        const db = await getDb();
+        const state = await db.get('SELECT is_active FROM email_search_state WHERE id = 1');
+        res.json({ is_active: state ? state.is_active === 1 : true });
+    } catch (error) {
+        console.error("Get Status Error:", error);
+        res.status(500).json({ error: "Failed to get auto scraper status." });
+    }
+};
+
+// 8. Toggle Auto Scraper Status
+exports.toggleAutoScraperStatus = async (req, res) => {
+    try {
+        const db = await getDb();
+        const state = await db.get('SELECT is_active FROM email_search_state WHERE id = 1');
+        const newStatus = state && state.is_active === 1 ? 0 : 1;
+        await db.run('UPDATE email_search_state SET is_active = ? WHERE id = 1', [newStatus]);
+        res.json({ is_active: newStatus === 1, message: newStatus === 1 ? "Auto Scraper Started" : "Auto Scraper Stopped" });
+    } catch (error) {
+        console.error("Toggle Status Error:", error);
+        res.status(500).json({ error: "Failed to toggle auto scraper status." });
+    }
+};

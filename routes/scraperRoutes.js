@@ -12,6 +12,12 @@ router.post('/trigger-background', authMiddleware, scraperController.triggerBack
 // Route to get current AI Queue status
 router.get('/queue-status', authMiddleware, scraperController.getQueueStatus);
 
+// Route to get Auto Scraper status (is_active)
+router.get('/status', authMiddleware, scraperController.getAutoScraperStatus);
+
+// Route to toggle Auto Scraper status
+router.post('/toggle', authMiddleware, scraperController.toggleAutoScraperStatus);
+
 // Route to view the PDF audit report inline
 router.get('/audit-pdf/:leadId', authMiddleware, scraperController.viewAuditPDF);
 

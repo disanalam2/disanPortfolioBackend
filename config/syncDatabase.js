@@ -131,7 +131,8 @@ const syncDatabase = async () => {
             `CREATE TABLE IF NOT EXISTS email_search_state (
               id INT PRIMARY KEY,
               current_location_index INT DEFAULT 0,
-              current_phase INT DEFAULT 1
+              current_phase INT DEFAULT 1,
+              is_active TINYINT(1) DEFAULT 1
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
 
             `CREATE TABLE IF NOT EXISTS email_accounts (
@@ -329,7 +330,15 @@ const syncDatabase = async () => {
         // Initialize email search state if not exists
         const [state] = await db.query('SELECT * FROM email_search_state WHERE id = 1');
         if (state.length === 0) {
-            await db.execute('INSERT INTO email_search_state (id, current_location_index, current_phase) VALUES (1, 0, 1)');
+            await db.execute('INSERT INTO email_search_state (id, current_location_index, current_phase, is_active) VALUES (1, 0, 1, 1)');
+        } else {
+            // Check for is_active column
+            const [isActiveCol] = await db.query("SHOW COLUMNS FROM email_search_state LIKE 'is_active'");
+            if (isActiveCol.length === 0) {
+                console.log('🔄 Adding missing column: is_active to email_search_state table...');
+                await db.execute("ALTER TABLE email_search_state ADD COLUMN is_active TINYINT(1) DEFAULT 1;");
+                console.log('✅ Column is_active added to email_search_state successfully!');
+            }
         }
 
     } catch (error) {
