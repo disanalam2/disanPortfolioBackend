@@ -67,12 +67,15 @@ async function generateColdEmail(businessName, niche, leadType, websiteIssues = 
 
         let finalPrompt = prompt;        
         if (leadType === 'bad_website') {
-            finalPrompt += `The purpose of the main email is to professionally inform them that you conducted a brief digital audit of their website and found some technical areas for improvement: ${websiteIssues}. Offer your expertise to resolve these bottlenecks to enhance their customer experience. 
+            finalPrompt += `The purpose of the main email is to professionally inform them that you conducted a brief digital audit of their website and found some technical areas for improvement based on these data points: ${websiteIssues}. 
+            
             SPECIAL RULES FOR BAD WEBSITES:
+            - You MUST present their website issues as a clear, short bulleted list using ✅ (for things they did right, if any) and ❌ or ⚠️ (for the problems found in the data).
             - If "mobile_responsive" is false in the issues, tell them aggressively but politely that their website is breaking on phones, meaning they are losing 80% of their mobile customers.
             - If "no_tracking" is true in the issues, tell them they are "marketing blind" because they don't have Facebook Pixel or Google Analytics installed, and offer to build a "Marketing-Ready" website.
             - If "is_wp_vulnerable" is true in the issues, tell them that their website is built on an outdated, vulnerable version of WordPress and can be easily hacked, risking their customer data. Tell them they need an immediate security migration to a modern platform.
-            Main email should be under 150 words.`;
+            
+            Keep this main email under 150 words, but ensure the bulleted list is easy to read.`;
         } else {
             finalPrompt += `The purpose of the main email is to professionally offer a strategic digital presence. Mention how a proper website can unlock new local revenue streams and elevate their brand. Main email should be under 150 words.`;
         }
@@ -182,12 +185,13 @@ async function generateManualAuditReport(url, auditData) {
         ${JSON.stringify(auditData, null, 2)}
         
         CRITICAL RULES FOR WRITING THE REPORT:
-        - If "speed_score" and "lcp" are null, DO NOT mention anything about website speed, slowness, or timeouts. It simply means our automated speed test was blocked by their server. Only discuss the other issues present in the data.
-        - Only mention issues that are explicitly flagged as bad in the data (e.g., missing_seo: true, no_tracking: true, missing_local_seo: true). Do not invent problems.
-        - If "missing_local_seo" is true, explicitly tell them they are missing Local SEO signals (like clickable phone numbers or Google Maps integrations) and are losing nearby customers.
+        - If "speed_score" and "lcp" are null, DO NOT mention anything about website speed, slowness, or timeouts. It simply means our automated speed test was blocked by their server.
+        - The client needs to see EXACTLY what is good and what is bad. Do not invent problems.
         
         Write a detailed, professional, and convincing report for the client (business owner) explaining:
-        1. "Kya Problem Hai" (What are the problems with their website based ONLY on the bad data points). Explain these technical issues in simple terms so a business owner understands why they are losing money or customers.
+        1. "Audit Results: The Good and The Bad": Create a clear bulleted list of ALL checked metrics (Speed, LCP, INP, SEO, Local SEO, Mobile, Tracking, SSL).
+           - For metrics that PASSED or have good scores (e.g. missing_seo: false, mobile_responsive: true), use a green tick mark (✅) and mention the actual score/status (like "✅ Speed Score: 95/100" or "✅ Mobile Responsive").
+           - For metrics that FAILED or have bad scores (e.g. speed < 50, missing_seo: true, no_tracking: true), use a red cross (❌) or warning (⚠️). Explicitly write what the problem is and why they are losing money/customers because of it.
         2. "Uska Solution Kya Hai" (How to fix it). Pitch that our digital agency can completely overhaul this, build a modern, fast, SEO-optimized and mobile-responsive website.
         
         Format the response in a very readable way with bullet points or clear headings. The tone should be consultative, professional, and slightly urgent (FOMO), emphasizing that they are losing local customers to competitors. 

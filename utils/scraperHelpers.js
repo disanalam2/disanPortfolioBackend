@@ -65,6 +65,7 @@ const deepAuditWebsite = async (url) => {
     let auditData = {
         speed_score: null,
         lcp: null,
+        inp: null,
         missing_seo: false,
         missing_local_seo: false,
         ssl_issue: false,
@@ -95,6 +96,19 @@ const deepAuditWebsite = async (url) => {
             }
             const lcpMetric = lighthouse.audits && lighthouse.audits['largest-contentful-paint'];
             auditData.lcp = (lcpMetric && lcpMetric.displayValue) ? lcpMetric.displayValue : 'N/A';
+            
+            // Extract INP or Fallback to TBT
+            let inpValue = 'N/A';
+            if (psResponse.data.loadingExperience && psResponse.data.loadingExperience.metrics && psResponse.data.loadingExperience.metrics.INTERACTION_TO_NEXT_PAINT_LATENCY) {
+                const cruxInp = psResponse.data.loadingExperience.metrics.INTERACTION_TO_NEXT_PAINT_LATENCY;
+                inpValue = `${cruxInp.percentile}ms (${cruxInp.category})`;
+            } else {
+                const tbtMetric = lighthouse.audits && lighthouse.audits['total-blocking-time'];
+                if (tbtMetric && tbtMetric.displayValue) {
+                    inpValue = `${tbtMetric.displayValue} (TBT)`;
+                }
+            }
+            auditData.inp = inpValue;
         }
     } catch (psError) {
         console.error(`PageSpeed API failed for ${fullUrl}:`, psError.message);
@@ -114,9 +128,11 @@ const deepAuditWebsite = async (url) => {
             
             auditData.speed_score = estimatedScore;
             auditData.lcp = `~${(duration / 1000).toFixed(1)}s (Est.)`;
+            auditData.inp = 'N/A (Test Skipped)';
         } catch (fallbackError) {
             auditData.speed_score = null;
             auditData.lcp = null;
+            auditData.inp = null;
         }
     }
 
