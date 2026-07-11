@@ -73,29 +73,38 @@ const deepAuditWebsite = async (url) => {
         is_wp_vulnerable: false
     };
 
+    const fullUrl = url.startsWith('http') ? url : `http://${url}`;
+
+    // A. Google PageSpeed API (Isolated to prevent timeout failing the rest)
     try {
-        const fullUrl = url.startsWith('http') ? url : `http://${url}`;
-        
-        // A. Google PageSpeed API
         const pagespeedUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(fullUrl)}&strategy=mobile`;
-        const psResponse = await axios.get(pagespeedUrl, { timeout: 15000 });
+        const psResponse = await axios.get(pagespeedUrl, { timeout: 30000 }); // Increased timeout
         
         const lighthouse = psResponse.data.lighthouseResult;
         if (lighthouse) {
-            auditData.speed_score = lighthouse.categories.performance.score * 100;
-            const lcpMetric = lighthouse.audits['largest-contentful-paint'];
-            auditData.lcp = lcpMetric ? lcpMetric.displayValue : 'N/A';
+            if (lighthouse.categories && lighthouse.categories.performance) {
+                auditData.speed_score = Math.round(lighthouse.categories.performance.score * 100);
+            }
+            const lcpMetric = lighthouse.audits && lighthouse.audits['largest-contentful-paint'];
+            auditData.lcp = (lcpMetric && lcpMetric.displayValue) ? lcpMetric.displayValue : 'N/A';
         }
+    } catch (psError) {
+        console.error(`PageSpeed API failed for ${fullUrl}:`, psError.message);
+        auditData.lcp = 'N/A (Test Timeout)';
+    }
 
+    try {
         // B. Basic SEO, Mobile & Tracking Check via Cheerio
         const webResponse = await axios.get(fullUrl, { timeout: 8000 });
         const htmlData = webResponse.data;
         const $ = cheerio.load(htmlData);
         
-        const title = $('title').text();
-        const description = $('meta[name="description"]').attr('content');
+        const title = $('title').text().trim();
+        const description = $('meta[name="description"]').attr('content')?.trim();
+        const h1 = $('h1').length > 0;
         
-        if (!title || !description) {
+        // A site is missing basic SEO if title/description are missing or too short, or if it lacks an H1 tag.
+        if (!title || title.length < 5 || !description || description.length < 10 || !h1) {
             auditData.missing_seo = true;
         }
 
@@ -105,8 +114,8 @@ const deepAuditWebsite = async (url) => {
             auditData.mobile_responsive = false;
         }
 
-        // Blind Marketing Check (No Pixel/Analytics)
-        if (!htmlData.includes('gtag(') && !htmlData.includes('GoogleAnalyticsObject') && !htmlData.includes('fbq(') && !htmlData.includes('fbevents.js')) {
+        // Blind Marketing Check (No Pixel/Analytics/GTM)
+        if (!htmlData.includes('gtag(') && !htmlData.includes('GoogleAnalyticsObject') && !htmlData.includes('fbq(') && !htmlData.includes('fbevents.js') && !htmlData.includes('GTM-')) {
             auditData.no_tracking = true;
         }
 
@@ -120,7 +129,9 @@ const deepAuditWebsite = async (url) => {
         }
         
         // C. SSL Check
-        if (fullUrl.startsWith('https')) {
+        // Check if the final redirected URL is HTTPS, rather than just the initial inputted URL
+        const finalUrl = webResponse.request?.res?.responseUrl || webResponse.config?.url || fullUrl;
+        if (finalUrl.startsWith('https')) {
             auditData.ssl_issue = false;
         } else {
             auditData.ssl_issue = true;
