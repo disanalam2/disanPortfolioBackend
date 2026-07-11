@@ -171,4 +171,30 @@ async function findBusinessDetails(businessName, address) {
     }
 }
 
-module.exports = { generateColdEmail, findBusinessDetails };
+async function generateManualAuditReport(url, auditData) {
+    if (!ai || !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key') {
+        return "Could not generate report: AI API key missing.";
+    }
+    
+    try {
+        const prompt = `You are an expert digital consultant. I have just audited a website: ${url}.
+        Here is the technical audit data:
+        ${JSON.stringify(auditData, null, 2)}
+        
+        Write a detailed, professional, and convincing report for the client (business owner) explaining:
+        1. "Kya Problem Hai" (What are the problems with their website based on this data, e.g. Speed, SEO, Mobile Responsiveness, SSL, No Tracking). Explain these technical issues in simple terms so a business owner understands why they are losing money or customers.
+        2. "Uska Solution Kya Hai" (How to fix it). Pitch that our digital agency can completely overhaul this, build a modern, fast, SEO-optimized and mobile-responsive website.
+        
+        Format the response in a very readable way with bullet points or clear headings. The tone should be consultative, professional, and slightly urgent (FOMO), emphasizing that they are losing local customers to competitors. 
+        You can write in a mix of English and simple terms (like Hinglish if helpful, but mostly professional English that is easy to read).`;
+        
+        const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const response = await model.generateContent(prompt);
+        return response.response.text();
+    } catch (error) {
+        console.error('Error generating manual audit report with Gemini:', error);
+        return "Failed to generate report due to an AI error.";
+    }
+}
+
+module.exports = { generateColdEmail, findBusinessDetails, generateManualAuditReport };

@@ -5,6 +5,7 @@ const { findContactDetailsOnWebsite, deepAuditWebsite } = require('../utils/scra
 const { generateColdEmail } = require('../worker/aiDrafter');
 const { runLeadGenerationJob } = require('../worker/leadGenerator');
 const { generateAuditPDF } = require('../utils/pdfGenerator');
+const { generateManualAuditReport } = require('../worker/aiDrafter');
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 // 1. Scrape Google Places for Local Businesses
@@ -236,5 +237,37 @@ exports.toggleAutoScraperStatus = async (req, res) => {
     } catch (error) {
         console.error("Toggle Status Error:", error);
         res.status(500).json({ error: "Failed to toggle auto scraper status." });
+    }
+};
+
+// 9. Manual Website Audit
+exports.manualAudit = async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url) {
+            return res.status(400).json({ error: "Website URL is required." });
+        }
+        
+        console.log(`Manual Audit requested for: ${url}`);
+        
+        // Audit Website
+        const { auditData } = await deepAuditWebsite(url);
+        
+        if (!auditData) {
+            return res.status(400).json({ error: "Could not analyze this website. It might be down or blocking bots." });
+        }
+        
+        // Generate AI Report for the client
+        const report = await generateManualAuditReport(url, auditData);
+        
+        res.json({
+            success: true,
+            auditData,
+            report
+        });
+        
+    } catch (error) {
+        console.error("Manual Audit Error:", error);
+        res.status(500).json({ error: "Failed to audit website. " + error.message });
     }
 };

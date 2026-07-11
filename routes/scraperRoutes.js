@@ -21,4 +21,7 @@ router.post('/toggle', authMiddleware, scraperController.toggleAutoScraperStatus
 // Route to view the PDF audit report inline
 router.get('/audit-pdf/:leadId', authMiddleware, scraperController.viewAuditPDF);
 
+// Route for manual website audit (client side report)
+router.post('/manual-audit', authMiddleware, scraperController.manualAudit);
+
 module.exports = router;
