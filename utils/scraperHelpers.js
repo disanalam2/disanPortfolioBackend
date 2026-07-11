@@ -97,8 +97,26 @@ const deepAuditWebsite = async (url) => {
         }
     } catch (psError) {
         console.error(`PageSpeed API failed for ${fullUrl}:`, psError.message);
-        auditData.speed_score = null;
-        auditData.lcp = null;
+        
+        // Fallback: Custom Speed Test (Response Time / TTFB)
+        try {
+            console.log(`Running fallback speed test for ${fullUrl}...`);
+            const startTime = Date.now();
+            await axios.get(fullUrl, { timeout: 10000 });
+            const duration = Date.now() - startTime;
+            
+            // Convert duration to a rough 1-100 score
+            // 500ms = 95, 3000ms = 55, 6000ms = 10
+            let estimatedScore = 100 - Math.floor((duration / 1000) * 15);
+            if (estimatedScore < 10) estimatedScore = 10;
+            if (estimatedScore > 99) estimatedScore = 99;
+            
+            auditData.speed_score = estimatedScore;
+            auditData.lcp = `~${(duration / 1000).toFixed(1)}s (Est.)`;
+        } catch (fallbackError) {
+            auditData.speed_score = null;
+            auditData.lcp = null;
+        }
     }
 
     try {
