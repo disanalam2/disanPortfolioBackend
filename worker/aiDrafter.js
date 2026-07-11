@@ -183,7 +183,8 @@ async function generateManualAuditReport(url, auditData) {
         
         CRITICAL RULES FOR WRITING THE REPORT:
         - If "speed_score" and "lcp" are null, DO NOT mention anything about website speed, slowness, or timeouts. It simply means our automated speed test was blocked by their server. Only discuss the other issues present in the data.
-        - Only mention issues that are explicitly flagged as bad in the data (e.g., missing_seo: true, no_tracking: true). Do not invent problems.
+        - Only mention issues that are explicitly flagged as bad in the data (e.g., missing_seo: true, no_tracking: true, missing_local_seo: true). Do not invent problems.
+        - If "missing_local_seo" is true, explicitly tell them they are missing Local SEO signals (like clickable phone numbers or Google Maps integrations) and are losing nearby customers.
         
         Write a detailed, professional, and convincing report for the client (business owner) explaining:
         1. "Kya Problem Hai" (What are the problems with their website based ONLY on the bad data points). Explain these technical issues in simple terms so a business owner understands why they are losing money or customers.

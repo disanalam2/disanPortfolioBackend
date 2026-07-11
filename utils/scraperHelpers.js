@@ -66,6 +66,7 @@ const deepAuditWebsite = async (url) => {
         speed_score: null,
         lcp: null,
         missing_seo: false,
+        missing_local_seo: false,
         ssl_issue: false,
         mobile_responsive: true,
         no_tracking: false,
@@ -132,6 +133,14 @@ const deepAuditWebsite = async (url) => {
         // A site is missing basic SEO if title/description are missing or too short, or if it lacks an H1 tag.
         if (!title || title.length < 5 || !description || description.length < 10 || !h1) {
             auditData.missing_seo = true;
+        }
+
+        // Local SEO Check (Looking for phone links or Google Maps)
+        const hasPhoneLink = $('a[href^="tel:"]').length > 0;
+        const hasGoogleMaps = $('iframe[src*="google.com/maps"]').length > 0 || $('a[href*="maps.google.com"]').length > 0;
+        
+        if (!hasPhoneLink && !hasGoogleMaps) {
+            auditData.missing_local_seo = true;
         }
 
         // Mobile Responsiveness Check (Viewport tag)
