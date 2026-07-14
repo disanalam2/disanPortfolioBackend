@@ -108,9 +108,11 @@ const adminLimiter = rateLimit({
 // API Routes connect kar rahe hain
 const { cacheMiddleware, clearCache } = require('./middleware/cacheMiddleware');
 
-// Apply caching to all GET requests globally, except auth
+// Apply caching to all GET requests globally, except protected routes
 app.use((req, res, next) => {
-    if (req.method === 'GET' && !req.originalUrl.includes('/api/auth')) {
+    const protectedRoutes = ['/api/auth', '/api/leads', '/api/scraper', '/api/upload'];
+    const isProtected = protectedRoutes.some(route => req.originalUrl.includes(route));
+    if (req.method === 'GET' && !isProtected) {
         return cacheMiddleware(req, res, next);
     }
     next();

@@ -152,7 +152,7 @@ exports.viewAuditPDF = async (req, res) => {
         const { leadId } = req.params;
         const db = await getDb();
         
-        const lead = await db.get('SELECT business_name, website_issues FROM email_leads WHERE id = ?', [leadId]);
+        const lead = await db.get('SELECT uuid, business_name, website_issues FROM email_leads WHERE id = ?', [leadId]);
         if (!lead) {
             return res.status(404).send('Lead not found');
         }
@@ -161,7 +161,8 @@ exports.viewAuditPDF = async (req, res) => {
             return res.status(400).send('No website issues / audit found for this lead.');
         }
 
-        const pdfData = await generateAuditPDF(lead.business_name, lead.website_issues);
+        const videoLink = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/pitch/${lead.uuid}` : `https://disanalam.me/pitch/${lead.uuid}`;
+        const pdfData = await generateAuditPDF(lead.business_name, lead.website_issues, videoLink);
         
         // Serve the PDF inline in the browser
         res.setHeader('Content-Type', 'application/pdf');

@@ -2,7 +2,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
-async function generateAuditPDF(businessName, websiteIssues) {
+async function generateAuditPDF(businessName, websiteIssues, videoLink = null) {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({ margin: 50 });
@@ -33,7 +33,7 @@ async function generateAuditPDF(businessName, websiteIssues) {
             
             // Introduction
             doc.fontSize(12)
-               .text('We ran a performance and conversion scan on your current website and found several critical issues that are currently causing you to lose potential local customers to your competitors.');
+               .text('We ran a performance and conversion scan on your current website and found several critical issues that are currently causing you to lose valuable traffic and high-ticket buyers to your competitors.');
             doc.moveDown();
             
             // The Issues Box
@@ -89,6 +89,13 @@ async function generateAuditPDF(businessName, websiteIssues) {
             doc.fillColor('#2563eb')
                .fontSize(14)
                .text('Click the link in the email to claim your free consultation and let us fix this for you.', { align: 'center' });
+            
+            if (videoLink) {
+                doc.moveDown(1);
+                doc.fillColor('#059669')
+                   .fontSize(12)
+                   .text(`Watch your custom video audit here: ${videoLink}`, { align: 'center', underline: true, link: videoLink });
+            }
             
             doc.end();
             

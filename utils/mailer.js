@@ -83,7 +83,8 @@ async function sendMailToLead(leadId, customDraft = null, subject = null, isFoll
 
     if (lead.lead_type === 'bad_website' && lead.website_issues && !isFollowUp) {
         try {
-            pdfData = await generateAuditPDF(lead.business_name, lead.website_issues);
+            const videoLink = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/pitch/${lead.uuid}` : `https://disanalam.me/pitch/${lead.uuid}`;
+            pdfData = await generateAuditPDF(lead.business_name, lead.website_issues, videoLink);
             attachments.push({
                 filename: pdfData.fileName,
                 path: pdfData.filePath

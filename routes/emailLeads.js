@@ -97,6 +97,18 @@ router.post('/:id/send', authMiddleware, async (req, res) => {
     }
 });
 
+// Delete all leads
+router.delete('/all', authMiddleware, async (req, res) => {
+    try {
+        const db = await getDb();
+        await db.run('DELETE FROM email_leads');
+        res.json({ message: 'All leads deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting all leads:', error);
+        res.status(500).json({ error: 'Failed to delete leads' });
+    }
+});
+
 // Delete a lead
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
@@ -146,13 +158,14 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const db = await getDb();
-        const lead = await db.get('SELECT business_name, website_issues FROM email_leads WHERE id = ?', [id]);
+        const lead = await db.get('SELECT uuid, business_name, website_issues FROM email_leads WHERE id = ?', [id]);
         
         if (!lead) {
             return res.status(404).json({ error: 'Lead not found.' });
         }
         
-        const { filePath, fileName } = await generateAuditPDF(lead.business_name, lead.website_issues);
+        const videoLink = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/pitch/${lead.uuid}` : `https://disanalam.me/pitch/${lead.uuid}`;
+        const { filePath, fileName } = await generateAuditPDF(lead.business_name, lead.website_issues, videoLink);
         
         res.download(filePath, fileName, (err) => {
             if (err) {

@@ -194,7 +194,7 @@ async function generateManualAuditReport(url, auditData) {
            - For metrics that FAILED or have bad scores (e.g. speed < 50, missing_seo: true, no_tracking: true), use a red cross (❌) or warning (⚠️). Explicitly write what the problem is and why they are losing money/customers because of it.
         2. "Uska Solution Kya Hai" (How to fix it). Pitch that our digital agency can completely overhaul this, build a modern, fast, SEO-optimized and mobile-responsive website.
         
-        Format the response in a very readable way with bullet points or clear headings. The tone should be consultative, professional, and slightly urgent (FOMO), emphasizing that they are losing local customers to competitors. 
+        Format the response in a very readable way with bullet points or clear headings. The tone should be consultative, professional, and slightly urgent (FOMO), emphasizing that they are losing valuable traffic and high-ticket buyers to competitors. 
         You can write in a mix of English and simple terms (like Hinglish if helpful, but mostly professional English that is easy to read).`;
         
         const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });

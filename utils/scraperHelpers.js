@@ -1,17 +1,28 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const dns = require('dns');
+const https = require('https');
 const { promisify } = require('util');
 const resolveDns = promisify(dns.resolve);
 
-// Scrape Website for Maximum Contact Details (Emails & Phones)
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+const browserHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5'
+};// Scrape Website for Maximum Contact Details (Emails & Phones)
 const findContactDetailsOnWebsite = async (url) => {
     if (!url) return { emails: '', phones: '' };
     
     let allValidEmails = new Set();
     let allCleanPhones = new Set();
     
-    const fullUrl = url.startsWith('http') ? url : `http://${url}`;
+    let fullUrl = url;
+    if (fullUrl.startsWith('http://')) {
+        fullUrl = fullUrl.replace('http://', 'https://');
+    } else if (!fullUrl.startsWith('https://')) {
+        fullUrl = `https://${fullUrl}`;
+    }
     // Base URL without trailing slash for appending paths
     const baseUrl = fullUrl.replace(/\/$/, '');
     
@@ -19,9 +30,20 @@ const findContactDetailsOnWebsite = async (url) => {
     
     for (const path of pathsToCheck) {
         try {
-            const targetUrl = `${baseUrl}${path}`;
+            let targetUrl = `${baseUrl}${path}`;
             console.log(`Scraping for contacts on: ${targetUrl}`);
-            const response = await axios.get(targetUrl, { timeout: 10000 });
+            let response;
+            try {
+                response = await axios.get(targetUrl, { timeout: 15000, httpsAgent, headers: browserHeaders });
+            } catch (err) {
+                if (targetUrl.startsWith('https://')) {
+                    console.log(`HTTPS failed for ${targetUrl}, trying HTTP fallback...`);
+                    targetUrl = targetUrl.replace('https://', 'http://');
+                    response = await axios.get(targetUrl, { timeout: 15000, httpsAgent, headers: browserHeaders });
+                } else {
+                    throw err;
+                }
+            }
             const html = response.data;
             
             // Extract Emails
@@ -75,7 +97,12 @@ const deepAuditWebsite = async (url) => {
         is_wp_vulnerable: false
     };
 
-    const fullUrl = url.startsWith('http') ? url : `http://${url}`;
+    let fullUrl = url;
+    if (fullUrl.startsWith('http://')) {
+        fullUrl = fullUrl.replace('http://', 'https://');
+    } else if (!fullUrl.startsWith('https://')) {
+        fullUrl = `https://${fullUrl}`;
+    }
 
     // A. Google PageSpeed API (Isolated to prevent timeout failing the rest)
     try {
@@ -117,7 +144,15 @@ const deepAuditWebsite = async (url) => {
         try {
             console.log(`Running fallback speed test for ${fullUrl}...`);
             const startTime = Date.now();
-            await axios.get(fullUrl, { timeout: 10000 });
+            try {
+                await axios.get(fullUrl, { timeout: 15000, httpsAgent, headers: browserHeaders });
+            } catch (err) {
+                if (fullUrl.startsWith('https://')) {
+                    await axios.get(fullUrl.replace('https://', 'http://'), { timeout: 15000, httpsAgent, headers: browserHeaders });
+                } else {
+                    throw err;
+                }
+            }
             const duration = Date.now() - startTime;
             
             // Convert duration to a rough 1-100 score
@@ -138,7 +173,17 @@ const deepAuditWebsite = async (url) => {
 
     try {
         // B. Basic SEO, Mobile & Tracking Check via Cheerio
-        const webResponse = await axios.get(fullUrl, { timeout: 8000 });
+        let webResponse;
+        try {
+            webResponse = await axios.get(fullUrl, { timeout: 15000, httpsAgent, headers: browserHeaders });
+        } catch (err) {
+            if (fullUrl.startsWith('https://')) {
+                const httpUrl = fullUrl.replace('https://', 'http://');
+                webResponse = await axios.get(httpUrl, { timeout: 15000, httpsAgent, headers: browserHeaders });
+            } else {
+                throw err;
+            }
+        }
         const htmlData = webResponse.data;
         const $ = cheerio.load(htmlData);
         
