@@ -155,6 +155,17 @@ const syncDatabase = async () => {
               locked_until DATETIME,
               error TEXT,
               created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
+
+            `CREATE TABLE IF NOT EXISTS page_views (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              page_path VARCHAR(255) NOT NULL,
+              referrer VARCHAR(255),
+              user_agent TEXT,
+              ip_address VARCHAR(255),
+              session_id VARCHAR(255),
+              device_type VARCHAR(50),
+              created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`
         ];
 

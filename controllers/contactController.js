@@ -2,15 +2,18 @@ const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
 
 exports.validateMessage = [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email is required'),
-    body('message').notEmpty().withMessage('Message cannot be empty'),
+    body('name').notEmpty().withMessage('Name is required').trim().escape(),
+    body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('message').notEmpty().withMessage('Message cannot be empty').trim().escape(),
+    body('subject').optional().trim().escape(),
+    body('preference').optional().trim().escape(),
+    body('contactHandle').optional().trim().escape(),
     body('websiteUrl').custom((value, { req }) => {
         if (req.body.subject !== 'Enterprise Custom Web App (New Build)' && !value) {
             throw new Error('Website URL is required for this service.');
         }
         return true;
-    })
+    }).trim() // Intentionally not escaping URL so it remains valid
 ];
 
 const nodemailer = require('nodemailer');

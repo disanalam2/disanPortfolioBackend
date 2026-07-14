@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
+const { pingIndexNow } = require('../utils/indexNow');
 
 exports.validateEducation = [
     body('degree').notEmpty().withMessage('Degree is required'),
@@ -35,7 +36,7 @@ exports.addEducation = async (req, res, next) => {
 
         const sql = `INSERT INTO education (degree, institution, period, details) VALUES (?, ?, ?, ?)`;
         const [result] = await db.execute(sql, [degree || "", institution || "", period || "", detailsStr]);
-
+        pingIndexNow('/education');
         res.status(201).json({ success: true, message: "Education added successfully!", insertId: result.insertId });
     } catch (error) {
         next(error);
@@ -55,7 +56,7 @@ exports.updateEducation = async (req, res, next) => {
 
         const sql = `UPDATE education SET degree=?, institution=?, period=?, details=? WHERE id=?`;
         await db.execute(sql, [degree || "", institution || "", period || "", detailsStr, eduId]);
-
+        pingIndexNow('/education');
         res.status(200).json({ success: true, message: "Education updated successfully!" });
     } catch (error) {
         next(error);
@@ -66,6 +67,7 @@ exports.deleteEducation = async (req, res, next) => {
     try {
         const eduId = req.params.id;
         await db.execute(`DELETE FROM education WHERE id=?`, [eduId]);
+        pingIndexNow('/education');
         res.status(200).json({ success: true, message: "Education deleted successfully!" });
     } catch (error) {
         next(error);

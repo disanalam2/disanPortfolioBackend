@@ -1,5 +1,6 @@
 const BlogService = require('../services/blogService');
 const { body, validationResult } = require('express-validator');
+const { pingIndexNow } = require('../utils/indexNow');
 
 /**
  * Validation rules for blog endpoints.
@@ -78,6 +79,9 @@ exports.addBlog = async (req, res, next) => {
         if (io) {
             io.emit('newBlog', { id: insertId, ...req.body });
         }
+        if (req.body.slug) {
+            pingIndexNow(`blogs/${req.body.slug}`);
+        }
         res.status(201).json({ success: true, message: "Blog added successfully!", insertId });
     } catch (error) {
         // Handle duplicate slug
@@ -102,6 +106,9 @@ exports.updateBlog = async (req, res, next) => {
         const io = req.app.get('io');
         if (io) {
             io.emit('updateBlog', { id: req.params.id, ...req.body });
+        }
+        if (req.body.slug) {
+            pingIndexNow(`blogs/${req.body.slug}`);
         }
         res.status(200).json({ success: true, message: "Blog updated successfully!" });
     } catch (error) {

@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
+const { pingIndexNow } = require('../utils/indexNow');
 
 exports.validateAbout = [
     body('title').notEmpty().withMessage('Title is required'),
@@ -41,6 +42,10 @@ exports.updateAbout = async (req, res, next) => {
             const sql = `INSERT INTO about (id, photo, title, shortDesc, whoIAm, whatIDo, howIWork, resume_link) VALUES (1, ?, ?, ?, ?, ?, ?, ?)`;
             await db.execute(sql, [photo || "", title, shortDesc, whoIAm, whatIDo, howIWork, resume_link || ""]);
         }
+
+        // Ping IndexNow for homepage and about page
+        pingIndexNow('/');
+        pingIndexNow('/about');
 
         res.status(200).json({ success: true, message: "About details updated successfully!" });
     } catch (error) {

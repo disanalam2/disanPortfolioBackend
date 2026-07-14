@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
+const { pingIndexNow } = require('../utils/indexNow');
 
 exports.validateExperience = [
     body('role').notEmpty().withMessage('Role is required'),
@@ -35,7 +36,7 @@ exports.addExperience = async (req, res, next) => {
 
         const sql = `INSERT INTO experience (role, company, period, details) VALUES (?, ?, ?, ?)`;
         const [result] = await db.execute(sql, [role || "", company || "", period || "", detailsStr]);
-
+        pingIndexNow('/experience');
         res.status(201).json({ success: true, message: "Experience added successfully!", insertId: result.insertId });
     } catch (error) {
         next(error);
@@ -55,7 +56,7 @@ exports.updateExperience = async (req, res, next) => {
 
         const sql = `UPDATE experience SET role=?, company=?, period=?, details=? WHERE id=?`;
         await db.execute(sql, [role || "", company || "", period || "", detailsStr, expId]);
-
+        pingIndexNow('/experience');
         res.status(200).json({ success: true, message: "Experience updated successfully!" });
     } catch (error) {
         next(error);
@@ -66,6 +67,7 @@ exports.deleteExperience = async (req, res, next) => {
     try {
         const expId = req.params.id;
         await db.execute(`DELETE FROM experience WHERE id=?`, [expId]);
+        pingIndexNow('/experience');
         res.status(200).json({ success: true, message: "Experience deleted successfully!" });
     } catch (error) {
         next(error);

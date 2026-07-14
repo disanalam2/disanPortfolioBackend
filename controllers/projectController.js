@@ -1,5 +1,6 @@
 const ProjectService = require('../services/projectService');
 const { body, validationResult } = require('express-validator');
+const { pingIndexNow } = require('../utils/indexNow');
 
 /**
  * Validation rules for project endpoints.
@@ -41,6 +42,7 @@ exports.addProject = async (req, res, next) => {
         }
 
         const insertId = await ProjectService.createProject(req.body);
+        pingIndexNow('/projects');
         res.status(201).json({ success: true, message: "Project added successfully!", insertId });
     } catch (error) {
         next(error);
@@ -61,6 +63,7 @@ exports.updateProject = async (req, res, next) => {
         }
 
         await ProjectService.updateProject(req.params.id, req.body);
+        pingIndexNow('/projects');
         res.status(200).json({ success: true, message: "Project updated successfully!" });
     } catch (error) {
         next(error);
@@ -76,6 +79,7 @@ exports.updateProject = async (req, res, next) => {
 exports.deleteProject = async (req, res, next) => {
     try {
         await ProjectService.deleteProject(req.params.id);
+        pingIndexNow('/projects');
         res.status(200).json({ success: true, message: "Project deleted successfully!" });
     } catch (error) {
         next(error);

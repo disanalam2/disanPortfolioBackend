@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
+const { pingIndexNow } = require('../utils/indexNow');
 
 exports.validateSkills = [
     body().isArray().withMessage('Skills data must be an array')
@@ -56,7 +57,7 @@ exports.syncSkills = async (req, res, next) => {
                 );
             }
         }
-
+        pingIndexNow('/skills');
         res.status(200).json({ success: true, message: "Skills updated and synced successfully!" });
     } catch (error) {
         next(error);

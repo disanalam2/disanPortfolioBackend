@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
+const { pingIndexNow } = require('../utils/indexNow');
 
 exports.validateCertificate = [
     body('title').notEmpty().withMessage('Title is required'),
@@ -27,7 +28,7 @@ exports.addCertificate = async (req, res, next) => {
 
         const sql = `INSERT INTO certificates (title, issuer, issue_date, description, href, image) VALUES (?, ?, ?, ?, ?, ?)`;
         const [result] = await db.execute(sql, [title || "", issuer || "", issue_date || "", description || "", href || "", image || ""]);
-
+        pingIndexNow('/certificate');
         res.status(201).json({ success: true, message: "Certificate added successfully!", insertId: result.insertId });
     } catch (error) {
         next(error);
@@ -46,7 +47,7 @@ exports.updateCertificate = async (req, res, next) => {
 
         const sql = `UPDATE certificates SET title=?, issuer=?, issue_date=?, description=?, href=?, image=? WHERE id=?`;
         await db.execute(sql, [title || "", issuer || "", issue_date || "", description || "", href || "", image || "", certId]);
-
+        pingIndexNow('/certificate');
         res.status(200).json({ success: true, message: "Certificate updated successfully!" });
     } catch (error) {
         next(error);
@@ -57,6 +58,7 @@ exports.deleteCertificate = async (req, res, next) => {
     try {
         const certId = req.params.id;
         await db.execute(`DELETE FROM certificates WHERE id=?`, [certId]);
+        pingIndexNow('/certificate');
         res.status(200).json({ success: true, message: "Certificate deleted successfully!" });
     } catch (error) {
         next(error);
