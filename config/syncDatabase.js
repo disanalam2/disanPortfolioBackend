@@ -125,8 +125,7 @@ const syncDatabase = async () => {
               follow_up_step INT DEFAULT 0,
               last_contacted_at DATETIME,
               timezone VARCHAR(100) DEFAULT 'Asia/Kolkata',
-              social_media_context TEXT,
-              is_award_public TINYINT(1) DEFAULT 0
+              social_media_context TEXT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
 
             `CREATE TABLE IF NOT EXISTS email_search_state (
@@ -327,13 +326,6 @@ const syncDatabase = async () => {
             console.log('✅ Column deleted added to email_accounts successfully!');
         }
 
-        // --- Email Leads is_award_public Enhancement ---
-        const [awardPublicCol] = await db.query("SHOW COLUMNS FROM email_leads LIKE 'is_award_public'");
-        if (awardPublicCol.length === 0) {
-            console.log('🔄 Adding missing column: is_award_public to email_leads table...');
-            await db.execute("ALTER TABLE email_leads ADD COLUMN is_award_public TINYINT(1) DEFAULT 0;");
-            console.log('✅ Column is_award_public added to email_leads successfully!');
-        }
 
         try {
             await db.query(`ALTER TABLE email_leads ADD COLUMN is_hot TINYINT(1) DEFAULT 0;`);

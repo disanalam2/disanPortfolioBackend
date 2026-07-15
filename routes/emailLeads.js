@@ -123,25 +123,12 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// Make PR Award Public
-router.post('/:id/publish-award', authMiddleware, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const db = await getDb();
-        await db.run('UPDATE email_leads SET is_award_public = 1 WHERE id = ?', [id]);
-        res.json({ message: 'Award page is now public!' });
-    } catch (error) {
-        console.error('Error publishing award:', error);
-        res.status(500).json({ error: 'Failed to publish award' });
-    }
-});
-
 // Public route for Dynamic React Pitch View
 router.get('/pitch/:uuid', async (req, res) => {
     try {
         const { uuid } = req.params;
         const db = await getDb();
-        const lead = await db.get('SELECT business_name, website, screenshot_url, website_issues, lead_type, niche, address, is_award_public FROM email_leads WHERE uuid = ?', [uuid]);
+        const lead = await db.get('SELECT business_name, website, screenshot_url, website_issues, lead_type, niche, address FROM email_leads WHERE uuid = ?', [uuid]);
         
         if (!lead) {
             return res.status(404).json({ error: 'Pitch not found or has expired.' });
@@ -186,8 +173,7 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
             return res.status(404).json({ error: 'Lead not found.' });
         }
         
-        const videoLink = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/pitch/${lead.uuid}` : `https://disanalam.me/pitch/${lead.uuid}`;
-        const { filePath, fileName } = await generateAuditPDF(lead.business_name, lead.website_issues, videoLink);
+        const { filePath, fileName } = await generateAuditPDF(lead.business_name, lead.website_issues);
         
         res.download(filePath, fileName, (err) => {
             if (err) {

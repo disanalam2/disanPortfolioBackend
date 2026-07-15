@@ -95,7 +95,7 @@ async function generateColdEmail(businessName, niche, leadType, websiteIssues = 
         Follow-up 1 should be very short (under 50 words), sent 3 days later, gently bumping the main email.
         Follow-up 2 should be a "breakup" email (under 50 words), sent 3 days after the first follow-up, saying goodbye but leaving the door open.
         
-        CRITICAL INSTRUCTION: In the main email, you MUST explicitly tell the recipient to "Click the link below to watch the video audit I made for you" and ensure the video link provided in the context is prominently displayed. Do not ask them to reply directly.
+        CRITICAL INSTRUCTION: If a mockup link is provided in the context, you MUST explicitly tell the recipient to "Click the link below to view your custom website mockup". Do not ask them to reply directly.
         
         Do not include placeholders like [Your Name] in the signature.
         Respond ONLY with a valid JSON object in this exact format, with no markdown formatting or backticks:

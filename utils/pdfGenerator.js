@@ -2,7 +2,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
-async function generateAuditPDF(businessName, websiteIssues, videoLink = null) {
+async function generateAuditPDF(businessName, websiteIssues) {
     return new Promise((resolve, reject) => {
         try {
             const doc = new PDFDocument({ margin: 50 });
@@ -55,14 +55,37 @@ async function generateAuditPDF(businessName, websiteIssues, videoLink = null) {
                 addMetric('Mobile Speed', audit.mobile_speed_score ? `${audit.mobile_speed_score}/100` : null, audit.mobile_speed_score < 60);
                 addMetric('Desktop Speed', audit.desktop_speed_score ? `${audit.desktop_speed_score}/100` : null, audit.desktop_speed_score < 60);
                 
-                addMetric('Mobile LCP (Load Time)', audit.mobile_lcp, audit.mobile_lcp && audit.mobile_lcp.includes('>'));
-                addMetric('Desktop LCP (Load Time)', audit.desktop_lcp, false);
+                const parseTime = (val) => {
+                    if (!val || val === 'N/A') return null;
+                    const str = String(val).toLowerCase();
+                    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+                    if (isNaN(num)) return null;
+                    return str.includes('ms') ? num / 1000 : num;
+                };
+
+                const parseNum = (val) => {
+                    if (!val || val === 'N/A') return null;
+                    const num = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+                    return isNaN(num) ? null : num;
+                };
+
+                const mlcp = parseTime(audit.mobile_lcp);
+                addMetric('Mobile LCP (Load Time)', audit.mobile_lcp, mlcp !== null ? mlcp > 2.5 : false);
                 
-                addMetric('Mobile INP (Interactivity)', audit.mobile_inp, false);
-                addMetric('Desktop INP (Interactivity)', audit.desktop_inp, false);
+                const dlcp = parseTime(audit.desktop_lcp);
+                addMetric('Desktop LCP (Load Time)', audit.desktop_lcp, dlcp !== null ? dlcp > 2.5 : false);
                 
-                addMetric('Mobile CLS (Visual Stability)', audit.mobile_cls, false);
-                addMetric('Desktop CLS (Visual Stability)', audit.desktop_cls, false);
+                const minp = parseTime(audit.mobile_inp);
+                addMetric('Mobile INP (Interactivity)', audit.mobile_inp, minp !== null ? minp > 0.2 : false);
+                
+                const dinp = parseTime(audit.desktop_inp);
+                addMetric('Desktop INP (Interactivity)', audit.desktop_inp, dinp !== null ? dinp > 0.2 : false);
+                
+                const mcls = parseNum(audit.mobile_cls);
+                addMetric('Mobile CLS (Visual Stability)', audit.mobile_cls, mcls !== null ? mcls > 0.1 : false);
+                
+                const dcls = parseNum(audit.desktop_cls);
+                addMetric('Desktop CLS (Visual Stability)', audit.desktop_cls, dcls !== null ? dcls > 0.1 : false);
 
                 if (audit.tech_stack && audit.tech_stack !== 'Custom / Unknown') issuesText.push(`[INFO] Technology Stack: ${audit.tech_stack}`);
                 
@@ -103,13 +126,6 @@ async function generateAuditPDF(businessName, websiteIssues, videoLink = null) {
             doc.fillColor('#2563eb')
                .fontSize(14)
                .text('Click the link in the email to claim your free consultation and let us fix this for you.', { align: 'center' });
-            
-            if (videoLink) {
-                doc.moveDown(1);
-                doc.fillColor('#059669')
-                   .fontSize(12)
-                   .text(`Watch your custom video audit here: ${videoLink}`, { align: 'center', underline: true, link: videoLink });
-            }
             
             doc.end();
             

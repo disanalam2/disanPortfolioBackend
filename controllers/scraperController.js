@@ -123,8 +123,7 @@ exports.viewAuditPDF = async (req, res) => {
             return res.status(400).send('No website issues / audit found for this lead.');
         }
 
-        const videoLink = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/pitch/${lead.uuid}` : `https://disanalam.me/pitch/${lead.uuid}`;
-        const pdfData = await generateAuditPDF(lead.business_name, lead.website_issues, videoLink);
+        const pdfData = await generateAuditPDF(lead.business_name, lead.website_issues);
         
         // Serve the PDF inline in the browser
         res.setHeader('Content-Type', 'application/pdf');
