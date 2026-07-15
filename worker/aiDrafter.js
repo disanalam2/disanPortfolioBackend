@@ -131,6 +131,11 @@ async function generateColdEmail(businessName, niche, leadType, websiteIssues = 
         return JSON.parse(text);
     } catch (error) {
         console.error('Error generating email with Gemini:', error);
+        const fallbackJSON = {
+            main: `Hi ${decisionMaker || 'Team'},\n\nI noticed ${businessName} might benefit from a strategic digital presence. Let's talk.\n\nBest,\nDisan`,
+            follow_up_1: `Hi ${decisionMaker || 'Team'},\n\nJust following up on my previous email. Let me know if you're interested in discussing a potential partnership.\n\nBest,\nDisan`,
+            follow_up_2: `Hi ${decisionMaker || 'Team'},\n\nThis is my final email. If you ever need digital strategy services, feel free to reach out.\n\nBest,\nDisan`
+        };
         return fallbackJSON;
     }
 }
