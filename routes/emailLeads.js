@@ -11,7 +11,7 @@ const fs = require('fs');
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const db = await getDb();
-        const rows = await db.all('SELECT * FROM email_leads ORDER BY created_at DESC');
+        const rows = await db.all('SELECT * FROM email_leads WHERE is_unsubscribed = 0 ORDER BY created_at DESC');
         res.json(rows);
     } catch (error) {
         console.error('Error fetching leads:', error);
