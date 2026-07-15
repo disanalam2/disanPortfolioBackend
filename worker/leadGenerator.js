@@ -484,11 +484,9 @@ async function processLeadJob(payload) {
 
     const leadUuid = crypto.randomUUID();
     const dynamicVideoLink = `https://disanalam.me/pitch/${leadUuid}`;
-    const dynamicPrLink = `https://disanalam.me/awards/${leadUuid}`;
     
     // Add instruction to include dynamic links
     const videoContext = `CRITICAL: You MUST include this exact link in the email where they can watch their video audit: ${dynamicVideoLink}`;
-    const prContext = `CRITICAL: You MUST include this exact link in the email to show them they were featured in our Top 10 List: ${dynamicPrLink}`;
 
     // Psychological Triggers (Phase 1 Only: No Website)
     let availableDomain = null;
@@ -514,10 +512,10 @@ async function processLeadJob(payload) {
         }
     }
 
-    const drafts = await generateColdEmail(lead.name, niche, leadType, websiteIssues, abVersion, contextPrefix + socialMediaContext + ". " + videoContext + ". " + prContext, intentAnalysis, lead.rating, screenshotUrl, availableDomain, competitors, decisionMakerName);
+    const drafts = await generateColdEmail(lead.name, niche, leadType, websiteIssues, abVersion, contextPrefix + socialMediaContext + ". " + videoContext, intentAnalysis, lead.rating, screenshotUrl, availableDomain, competitors, decisionMakerName);
 
     // FORCE append the links to ensure Gemini didn't miss them
-    const linkAppendix = `\n\n---\n📽️ Watch your custom video audit here: ${dynamicVideoLink}\n🏆 View your PR feature here: ${dynamicPrLink}`;
+    const linkAppendix = `\n\n---\n📽️ Watch your custom video audit here: ${dynamicVideoLink}`;
     drafts.main = (drafts.main || '') + linkAppendix;
     if (drafts.follow_up_1) drafts.follow_up_1 += linkAppendix;
     if (drafts.follow_up_2) drafts.follow_up_2 += linkAppendix;

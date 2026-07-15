@@ -45,30 +45,36 @@ async function generateAuditPDF(businessName, websiteIssues, videoLink = null) {
             let issuesText = [];
             try {
                 const audit = JSON.parse(websiteIssues);
-                if (audit.speed_score !== null && audit.speed_score !== undefined) {
-                    issuesText.push(`• Mobile Speed Score: ${audit.speed_score}/100 (Google PageSpeed)`);
-                }
-                if (audit.lcp && audit.lcp !== 'N/A') {
-                    issuesText.push(`• Largest Contentful Paint (LCP): ${audit.lcp}`);
-                }
-                if (audit.mobile_responsive === false) {
-                    issuesText.push(`• Mobile Responsiveness: FAILED (Not optimized for mobile devices)`);
-                }
-                if (audit.ssl_issue === true) {
-                    issuesText.push(`• Security: FAILED (Missing or invalid SSL Certificate)`);
-                }
-                if (audit.missing_seo === true) {
-                    issuesText.push(`• Search Engine Optimization: FAILED (Missing basic Meta tags)`);
-                }
-                if (audit.is_expired === true) {
-                    issuesText.push(`• Domain Status: EXPIRED/DEAD`);
-                }
-                if (issuesText.length === 0) issuesText.push('• General performance and conversion issues found.');
+                
+                const addMetric = (label, value, isBad) => {
+                    if (value !== null && value !== undefined && value !== 'N/A') {
+                        issuesText.push(`${isBad ? '[FAIL]' : '[PASS]'} ${label}: ${value}`);
+                    }
+                };
+
+                addMetric('Mobile Speed', audit.mobile_speed_score ? `${audit.mobile_speed_score}/100` : null, audit.mobile_speed_score < 60);
+                addMetric('Desktop Speed', audit.desktop_speed_score ? `${audit.desktop_speed_score}/100` : null, audit.desktop_speed_score < 60);
+                
+                addMetric('Mobile LCP (Load Time)', audit.mobile_lcp, audit.mobile_lcp && audit.mobile_lcp.includes('>'));
+                addMetric('Desktop LCP (Load Time)', audit.desktop_lcp, false);
+                
+                addMetric('Mobile INP (Interactivity)', audit.mobile_inp, false);
+                addMetric('Desktop INP (Interactivity)', audit.desktop_inp, false);
+                
+                addMetric('Mobile CLS (Visual Stability)', audit.mobile_cls, false);
+                addMetric('Desktop CLS (Visual Stability)', audit.desktop_cls, false);
+
+                if (audit.mobile_responsive === false) issuesText.push(`[FAIL] Mobile Responsiveness: Not Optimized`);
+                if (audit.ssl_issue === true) issuesText.push(`[FAIL] Security: Missing SSL Certificate`);
+                if (audit.missing_seo === true) issuesText.push(`[FAIL] SEO: Missing basic Meta tags`);
+                if (audit.is_expired === true) issuesText.push(`[FAIL] Domain: EXPIRED/DEAD`);
+                
+                if (issuesText.length === 0) issuesText.push('[FAIL] General performance and conversion issues found.');
             } catch (e) {
-                issuesText = [websiteIssues || "Slow mobile loading speed, poor SEO structure, and lack of clear Call-To-Action buttons."];
+                issuesText = ["[FAIL] Slow mobile loading speed, poor SEO structure, and lack of clear Call-To-Action buttons."];
             }
 
-            doc.fillColor('#7f1d1d').text(issuesText.join('\n\n'), {
+            doc.fillColor('#7f1d1d').text(issuesText.join('\n'), {
                 width: 480,
                 align: 'left'
             });

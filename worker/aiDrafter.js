@@ -43,8 +43,6 @@ async function generateColdEmail(businessName, niche, leadType, websiteIssues = 
         - If [HIRING LEAD]: Tell them that since they are expanding their team, it is the perfect time to build a robust digital presence that matches their new growth.
         - If [GOOGLE BUSINESS SITE LEAD]: Urgently inform them that Google has shut down their free .business.site websites, meaning they are losing customers right now, and they need a real custom domain immediately.
         - If [FREE DOMAIN LEAD]: Tell them that using a free domain (.wixsite or .blogspot) looks unprofessional to clients, and they need a premium .com domain to build brand authority.
-        - THE FREE PR TRICK & SOCIAL SHOUTOUT: Congratulate them on having an excellent local reputation. Tell them you have featured their business in your agency's "Top 10 Rated Businesses" list (use the provided PR link) AND you will be giving them a free shoutout on your fast-growing social media page to your local followers. Then mention that you noticed they don't have an official website, and offer to build one to match their Top 10 status.
-        
         - THE SLEEP MODE PITCH: Emphasize that business owners lose customers to competitors when their shop/office is closed or when they miss a call. Pitch the website as a "24/7 digital salesman" that works for free, taking orders and bookings even at 2 AM.
         
         - THE REVIEW MACHINE ANGLE: Pitch that you aren't just selling a website, you are offering a "Review Engine". Explain that anyone who books/orders through the new website will automatically receive a WhatsApp message the next day asking for a 5-star Google review, massively boosting their local ranking.

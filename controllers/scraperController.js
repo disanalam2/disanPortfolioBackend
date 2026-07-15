@@ -43,7 +43,12 @@ const scrapeGooglePlaces = async (query) => {
             }
         }
 
-        return leads;
+        // Prioritize leads WITHOUT websites first, as requested by the user
+        return leads.sort((a, b) => {
+            if (!a.website && b.website) return -1;
+            if (a.website && !b.website) return 1;
+            return 0;
+        });
     } catch (error) {
         console.error("Error scraping Google Places:", error.message);
         return [];

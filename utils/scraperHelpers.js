@@ -85,9 +85,18 @@ const deepAuditWebsite = async (url) => {
     if (!url) return null;
     
     let auditData = {
-        speed_score: null,
-        lcp: null,
-        inp: null,
+        mobile_speed_score: null,
+        desktop_speed_score: null,
+        mobile_lcp: null,
+        desktop_lcp: null,
+        mobile_inp: null,
+        desktop_inp: null,
+        mobile_fcp: null,
+        desktop_fcp: null,
+        mobile_cls: null,
+        desktop_cls: null,
+        mobile_tbt: null,
+        desktop_tbt: null,
         missing_seo: false,
         missing_local_seo: false,
         ssl_issue: false,
@@ -106,37 +115,68 @@ const deepAuditWebsite = async (url) => {
 
     // A. Google PageSpeed API (Isolated to prevent timeout failing the rest)
     try {
-        // Use the existing Google API key from .env to avoid rate limits/blocks
         let apiKeyParam = '';
         if (process.env.GOOGLE_PLACES_API_KEY) {
             const cleanKey = process.env.GOOGLE_PLACES_API_KEY.replace(/['"]/g, '');
             apiKeyParam = `&key=${cleanKey}`;
         }
         
-        const pagespeedUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(fullUrl)}&strategy=mobile${apiKeyParam}`;
-        const psResponse = await axios.get(pagespeedUrl, { timeout: 30000 }); // Increased timeout
+        const mobileUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(fullUrl)}&strategy=mobile${apiKeyParam}`;
+        const desktopUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(fullUrl)}&strategy=desktop${apiKeyParam}`;
         
-        const lighthouse = psResponse.data.lighthouseResult;
-        if (lighthouse) {
-            if (lighthouse.categories && lighthouse.categories.performance) {
-                auditData.speed_score = Math.round(lighthouse.categories.performance.score * 100);
-            }
-            const lcpMetric = lighthouse.audits && lighthouse.audits['largest-contentful-paint'];
-            auditData.lcp = (lcpMetric && lcpMetric.displayValue) ? lcpMetric.displayValue : 'N/A';
+        // Fetch both concurrently to save time
+        const [mobileRes, desktopRes] = await Promise.allSettled([
+            axios.get(mobileUrl, { timeout: 30000 }),
+            axios.get(desktopUrl, { timeout: 30000 })
+        ]);
+
+        if (mobileRes.status === 'fulfilled' && mobileRes.value.data.lighthouseResult) {
+            const data = mobileRes.value.data;
+            const lighthouse = data.lighthouseResult;
             
-            // Extract INP or Fallback to TBT
-            let inpValue = 'N/A';
-            if (psResponse.data.loadingExperience && psResponse.data.loadingExperience.metrics && psResponse.data.loadingExperience.metrics.INTERACTION_TO_NEXT_PAINT_LATENCY) {
-                const cruxInp = psResponse.data.loadingExperience.metrics.INTERACTION_TO_NEXT_PAINT_LATENCY;
-                inpValue = `${cruxInp.percentile}ms (${cruxInp.category})`;
-            } else {
-                const tbtMetric = lighthouse.audits && lighthouse.audits['total-blocking-time'];
-                if (tbtMetric && tbtMetric.displayValue) {
-                    inpValue = `${tbtMetric.displayValue} (TBT)`;
-                }
+            if (lighthouse.categories && lighthouse.categories.performance) {
+                auditData.mobile_speed_score = Math.round(lighthouse.categories.performance.score * 100);
             }
-            auditData.inp = inpValue;
+            const audits = lighthouse.audits || {};
+            auditData.mobile_lcp = audits['largest-contentful-paint']?.displayValue || 'N/A';
+            auditData.mobile_fcp = audits['first-contentful-paint']?.displayValue || 'N/A';
+            auditData.mobile_cls = audits['cumulative-layout-shift']?.displayValue || 'N/A';
+            auditData.mobile_tbt = audits['total-blocking-time']?.displayValue || 'N/A';
+            
+            if (data.loadingExperience?.metrics?.INTERACTION_TO_NEXT_PAINT_LATENCY) {
+                const cruxInp = data.loadingExperience.metrics.INTERACTION_TO_NEXT_PAINT_LATENCY;
+                auditData.mobile_inp = `${cruxInp.percentile}ms (${cruxInp.category})`;
+            } else {
+                auditData.mobile_inp = auditData.mobile_tbt !== 'N/A' ? `${auditData.mobile_tbt} (Est. via TBT)` : 'N/A';
+            }
         }
+
+        if (desktopRes.status === 'fulfilled' && desktopRes.value.data.lighthouseResult) {
+            const data = desktopRes.value.data;
+            const lighthouse = data.lighthouseResult;
+            
+            if (lighthouse.categories && lighthouse.categories.performance) {
+                auditData.desktop_speed_score = Math.round(lighthouse.categories.performance.score * 100);
+            }
+            const audits = lighthouse.audits || {};
+            auditData.desktop_lcp = audits['largest-contentful-paint']?.displayValue || 'N/A';
+            auditData.desktop_fcp = audits['first-contentful-paint']?.displayValue || 'N/A';
+            auditData.desktop_cls = audits['cumulative-layout-shift']?.displayValue || 'N/A';
+            auditData.desktop_tbt = audits['total-blocking-time']?.displayValue || 'N/A';
+            
+            if (data.loadingExperience?.metrics?.INTERACTION_TO_NEXT_PAINT_LATENCY) {
+                const cruxInp = data.loadingExperience.metrics.INTERACTION_TO_NEXT_PAINT_LATENCY;
+                auditData.desktop_inp = `${cruxInp.percentile}ms (${cruxInp.category})`;
+            } else {
+                auditData.desktop_inp = auditData.desktop_tbt !== 'N/A' ? `${auditData.desktop_tbt} (Est. via TBT)` : 'N/A';
+            }
+        }
+        
+        // If BOTH failed, throw error to trigger fallback
+        if (mobileRes.status === 'rejected' && desktopRes.status === 'rejected') {
+            throw new Error('Both Mobile and Desktop PageSpeed API calls failed');
+        }
+
     } catch (psError) {
         console.error(`PageSpeed API failed for ${fullUrl}:`, psError.message);
         
@@ -161,13 +201,31 @@ const deepAuditWebsite = async (url) => {
             if (estimatedScore < 10) estimatedScore = 10;
             if (estimatedScore > 99) estimatedScore = 99;
             
-            auditData.speed_score = estimatedScore;
-            auditData.lcp = `~${(duration / 1000).toFixed(1)}s (Est.)`;
-            auditData.inp = 'N/A (Test Skipped)';
+            auditData.mobile_speed_score = estimatedScore;
+            auditData.desktop_speed_score = estimatedScore; // Use same for fallback
+            
+            const seconds = duration / 1000;
+            auditData.mobile_lcp = `~${seconds.toFixed(1)}s (Est.)`;
+            auditData.desktop_lcp = `~${seconds.toFixed(1)}s (Est.)`;
+            
+            auditData.mobile_inp = 'N/A';
+            auditData.desktop_inp = 'N/A';
+            auditData.mobile_fcp = 'N/A';
+            auditData.desktop_fcp = 'N/A';
+            auditData.mobile_cls = 'N/A';
+            auditData.desktop_cls = 'N/A';
+            
         } catch (fallbackError) {
-            auditData.speed_score = null;
-            auditData.lcp = null;
-            auditData.inp = null;
+            auditData.mobile_speed_score = null;
+            auditData.desktop_speed_score = null;
+            auditData.mobile_lcp = null;
+            auditData.desktop_lcp = null;
+            auditData.mobile_inp = null;
+            auditData.desktop_inp = null;
+            auditData.mobile_fcp = null;
+            auditData.desktop_fcp = null;
+            auditData.mobile_cls = null;
+            auditData.desktop_cls = null;
         }
     }
 
@@ -252,8 +310,9 @@ const deepAuditWebsite = async (url) => {
     }
 
     // Determine if website is bad enough to pitch
-    // If speed score is below 60, missing SEO, SSL issue, broken mobile, no tracking, or WP vulnerable, it's bad
-    const isBad = (auditData.speed_score !== null && auditData.speed_score < 60) || 
+    // If mobile or desktop speed score is below 60, missing SEO, SSL issue, broken mobile, no tracking, or WP vulnerable, it's bad
+    const isBad = (auditData.mobile_speed_score !== null && auditData.mobile_speed_score < 60) || 
+                  (auditData.desktop_speed_score !== null && auditData.desktop_speed_score < 60) ||
                   auditData.missing_seo || 
                   auditData.ssl_issue || 
                   !auditData.mobile_responsive || 
