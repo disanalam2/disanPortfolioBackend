@@ -99,6 +99,8 @@ async function fetchLeadsFromGooglePlaces(location, phase) {
     console.log(`Fetching leads from Google Places API for ${location} (Phase ${phase})...`);
     try {
         const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+        if (!apiKey || !canUseApi('GOOGLE')) return [];
+        
         const targetQueries = ["dentists in", "lawyers in", "architects in", "real estate agents in", "wholesalers in", "restaurants in", "startups in"];
         // Pick a random query to keep things varied
         const query = targetQueries[Math.floor(Math.random() * targetQueries.length)] + " " + location;
@@ -122,13 +124,17 @@ async function fetchLeadsFromGooglePlaces(location, phase) {
             
             // Deep scan: Fetch exact website and phone from Place Details API
             try {
-                const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${apiKey}`;
+                if (!canUseApi('GOOGLE')) {
+                    console.log("Google API limit reached. Skipping place details.");
+                } else {
+                    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${apiKey}`;
                 const detailsResponse = await axios.get(detailsUrl);
-                if (detailsResponse.data.status === 'OK') {
-                    const details = detailsResponse.data.result;
-                    phone = details.formatted_phone_number || null;
-                    website = details.website || null;
-                    incrementApiUsage('GOOGLE');
+                    if (detailsResponse.data.status === 'OK') {
+                        const details = detailsResponse.data.result;
+                        phone = details.formatted_phone_number || null;
+                        website = details.website || null;
+                        incrementApiUsage('GOOGLE');
+                    }
                 }
             } catch (err) {
                 console.error("Error fetching Place Details:", err.message);
@@ -157,6 +163,8 @@ async function fetchLeadsFromDomains(location) {
     console.log(`Fetching leads from Newly Registered Domains (WhoisXML API) for ${location}...`);
     try {
         const apiKey = process.env.WHOIS_API_KEY;
+        if (!apiKey || !canUseApi('DOMAINS')) return [];
+        
         // Mocking the architecture for the API call
         // const response = await axios.get(`https://newly-registered-domains.whoisxmlapi.com/api/v1?apiKey=${apiKey}&outputFormat=JSON`);
         // We simulate returning placeholder data that aiDrafter will process
@@ -185,6 +193,8 @@ async function fetchLeadsFromFBAds(location) {
     console.log(`Fetching leads from Facebook Ads Library (Apify) for ${location}...`);
     try {
         const apiKey = process.env.APIFY_API_KEY;
+        if (!apiKey || !canUseApi('APIFY')) return [];
+        
         // Mocking the architecture for Apify Meta Ads Scraper
         console.log("Apify FB Ads Scraper called. Returning FB Ads leads...");
         incrementApiUsage('APIFY');
