@@ -56,6 +56,11 @@ async function generateColdEmail(businessName, niche, leadType, websiteIssues = 
         ${availableDomain ? `- THE DOMAIN HIJACK WARNING: Urgently tell them that their exact business domain name (${availableDomain}) is currently available for a very low price. Warn them that if a competitor or domain squatter buys it, they will never be able to use their own name for their website. Offer to register it for them immediately.` : ''}
         ${competitors && competitors.length > 0 ? `- FOMO (FEAR OF MISSING OUT): Tell them that you noticed their local competitors like ${competitors.join(' and ')} are already taking online orders/bookings through their websites, meaning they are actively losing their local traffic to them.` : ''}
         
+        ${leadType === 'no_website' ? `- THE RENTED LAND RISK: "I see your entire online presence relies on Facebook/Instagram. You are building your business on rented land. If your account gets hacked or banned tomorrow (which happens to businesses daily), your digital presence is wiped out in 1 second. You need your own Domain and Custom Website (Digital Real Estate) that YOU own."` : ''}
+        ${leadType === 'no_website' && niche ? `- THE MATH OF MISSING OUT (REVENUE CALCULATOR): Write a short mathematical estimate based on their niche (${niche}). Example format: "There are roughly 10,000 people searching for '${niche} near me' every month. Because you don't have a website to capture this search traffic, you are voluntarily handing over thousands of dollars in monthly revenue straight to your competitors."` : ''}
+        ${leadType === 'no_website' ? `- THE VISUAL HOOK: Explicitly say "I spent 15 minutes designing a mockup of what your 24/7 digital storefront could look like. Check the attached link to view your design."` : ''}
+        ${leadType === 'no_website' && rating ? `- GHOST PROFILE WARNING: "I found your business on Google Maps, but without a website link, it looks like a 'Ghost Profile'. In 2026, 76% of high-paying customers do not trust a business that doesn't have an official website. They assume it's a scam or permanently closed."` : ''}
+        
         General Strategy: Focus on revenue growth, operational efficiency, and ROI.
         
         CRITICAL: Address the email to "${decisionMaker ? 'Hi ' + decisionMaker : 'Hi Team'}" and NOT "Dear Business Owner".
@@ -65,15 +70,23 @@ async function generateColdEmail(businessName, niche, leadType, websiteIssues = 
 
         let finalPrompt = prompt;        
         if (leadType === 'bad_website') {
+            let issuesObj = {};
+            try { issuesObj = JSON.parse(websiteIssues); } catch(e) {}
+            
             finalPrompt += `The purpose of the main email is to professionally inform them that you conducted a brief digital audit of their website and found some technical areas for improvement based on these data points: ${websiteIssues}. 
             
             SPECIAL RULES FOR BAD WEBSITES:
             - You MUST present their website issues as a clear, short bulleted list using ✅ (for things they did right, if any) and ❌ or ⚠️ (for the problems found in the data).
             - If "mobile_responsive" is false in the issues, tell them aggressively but politely that their website is breaking on phones, meaning they are losing 80% of their mobile customers.
-            - If "no_tracking" is true in the issues, tell them they are "marketing blind" because they don't have Facebook Pixel or Google Analytics installed, and offer to build a "Marketing-Ready" website.
             - If "is_wp_vulnerable" is true in the issues, tell them that their website is built on an outdated, vulnerable version of WordPress and can be easily hacked, risking their customer data. Tell them they need an immediate security migration to a modern platform.
             
-            Keep this main email under 150 words, but ensure the bulleted list is easy to read.`;
+            NEW DEADLY PSYCHOLOGICAL TRIGGERS (USE IF DATA EXISTS):
+            ${issuesObj.tech_stack && issuesObj.tech_stack !== 'Custom / Unknown' ? `- TECH STACK REVEAL: Subtly mention "I noticed your site is built on ${issuesObj.tech_stack}. As you know, ${issuesObj.tech_stack} can sometimes be bloated and slow, which is why we migrate brands to lightning-fast Custom Web Apps."` : ''}
+            ${issuesObj.running_ads === true && (issuesObj.mobile_speed_score < 60 || issuesObj.desktop_speed_score < 60) ? `- THE ROI / AD-SPEND PITCH (CRITICAL): "I see you are currently running paid ads (Meta/Google). However, with your slow load time, you are literally burning your ad budget because traffic bounces before the page even loads. Fixing this will instantly increase your Ad ROI."` : ''}
+            ${issuesObj.accessibility_issues > 0 ? `- ADA COMPLIANCE WARNING: "Your website failed the Accessibility test (${issuesObj.accessibility_issues} images missing ADA alt-tags). In many regions, this puts you at risk of legal fines. We build 100% compliant websites."` : ''}
+            ${issuesObj.broken_links > 0 ? `- BROKEN LINKS ALERT: "We found ${issuesObj.broken_links} broken link(s) on your homepage. When high-ticket customers click them and see an error, they instantly lose trust in your brand."` : ''}
+            
+            Keep this main email under 150-180 words, but ensure the bulleted list is easy to read.`;
         } else {
             finalPrompt += `The purpose of the main email is to professionally offer a strategic digital presence. Mention how a proper website can unlock new local revenue streams and elevate their brand. Main email should be under 150 words.`;
         }

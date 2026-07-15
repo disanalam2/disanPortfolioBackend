@@ -97,6 +97,10 @@ const deepAuditWebsite = async (url) => {
         desktop_cls: null,
         mobile_tbt: null,
         desktop_tbt: null,
+        tech_stack: 'Custom / Unknown',
+        running_ads: false,
+        accessibility_issues: 0,
+        broken_links: 0,
         missing_seo: false,
         missing_local_seo: false,
         ssl_issue: false,
@@ -268,19 +272,66 @@ const deepAuditWebsite = async (url) => {
             auditData.mobile_responsive = false;
         }
 
-        // Blind Marketing Check (No Pixel/Analytics/GTM)
-        if (!htmlData.includes('gtag(') && !htmlData.includes('GoogleAnalyticsObject') && !htmlData.includes('fbq(') && !htmlData.includes('fbevents.js') && !htmlData.includes('GTM-')) {
-            auditData.no_tracking = true;
-        }
-
-        // Hack-Check (Vulnerability detection for old WordPress)
+        // 1. Tech-Stack Detection
         const isWordPress = htmlData.includes('/wp-content/') || $('meta[name="generator"]').attr('content')?.toLowerCase().includes('wordpress');
         if (isWordPress) {
-            // Assume vulnerable if it's WP and it leaks version (very common for unmaintained sites)
+            auditData.tech_stack = 'WordPress';
+            // Hack-Check (Vulnerability detection for old WordPress)
             if (htmlData.includes('ver=4.') || htmlData.includes('ver=5.') || $('meta[name="generator"]').attr('content')?.match(/WordPress (4|5)\./)) {
                 auditData.is_wp_vulnerable = true;
             }
+        } else if (htmlData.includes('cdn.shopify.com') || htmlData.includes('Shopify.shop')) {
+            auditData.tech_stack = 'Shopify';
+        } else if (htmlData.includes('wix.com') || $('meta[name="generator"]').attr('content')?.toLowerCase().includes('wix')) {
+            auditData.tech_stack = 'Wix';
         }
+
+        // 2. Ad-Spend Detector & Blind Marketing Check
+        const hasMetaPixel = htmlData.includes('fbq(') || htmlData.includes('fbevents.js');
+        const hasGoogleTags = htmlData.includes('gtag(') || htmlData.includes('GoogleAnalyticsObject') || htmlData.includes('GTM-');
+        
+        if (hasMetaPixel || hasGoogleTags) {
+            auditData.running_ads = true;
+        }
+        if (!hasMetaPixel && !hasGoogleTags) {
+            auditData.no_tracking = true;
+        }
+
+        // 3. ADA Accessibility Scanner
+        let missingAltCount = 0;
+        $('img').each((i, el) => {
+            const alt = $(el).attr('alt');
+            if (!alt || alt.trim() === '') {
+                missingAltCount++;
+            }
+        });
+        auditData.accessibility_issues = missingAltCount;
+
+        // 4. Broken Link / 404 Error Checker (Max 5 links)
+        const links = [];
+        $('a').each((i, el) => {
+            const href = $(el).attr('href');
+            if (href && href.startsWith('http') && !href.includes('linkedin.com') && !href.includes('facebook.com') && !href.includes('instagram.com')) {
+                links.push(href);
+            } else if (href && href.startsWith('/')) {
+                links.push(`${baseUrl}${href}`);
+            }
+        });
+        
+        const linksToCheck = links.slice(0, 5);
+        let brokenLinksCount = 0;
+        
+        for (const l of linksToCheck) {
+            try {
+                await axios.head(l, { timeout: 3000, httpsAgent, headers: browserHeaders });
+            } catch (err) {
+                if (err.response && (err.response.status === 404 || err.response.status === 500)) {
+                    brokenLinksCount++;
+                }
+            }
+        }
+        auditData.broken_links = brokenLinksCount;
+        
         
         // C. SSL Check
         // Check if the final redirected URL is HTTPS, rather than just the initial inputted URL

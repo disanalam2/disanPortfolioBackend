@@ -484,9 +484,10 @@ async function processLeadJob(payload) {
 
     const leadUuid = crypto.randomUUID();
     const dynamicVideoLink = `https://disanalam.me/pitch/${leadUuid}`;
+    const dynamicMockupLink = `https://disanalam.me/api/leads/mockup/${leadUuid}`;
     
     // Add instruction to include dynamic links
-    const videoContext = `CRITICAL: You MUST include this exact link in the email where they can watch their video audit: ${dynamicVideoLink}`;
+    const videoContext = `CRITICAL: You MUST include this exact link in the email where they can watch their video audit: ${dynamicVideoLink}. For no_website leads, also mention they can see their mockup here: ${dynamicMockupLink}`;
 
     // Psychological Triggers (Phase 1 Only: No Website)
     let availableDomain = null;
@@ -515,7 +516,10 @@ async function processLeadJob(payload) {
     const drafts = await generateColdEmail(lead.name, niche, leadType, websiteIssues, abVersion, contextPrefix + socialMediaContext + ". " + videoContext, intentAnalysis, lead.rating, screenshotUrl, availableDomain, competitors, decisionMakerName);
 
     // FORCE append the links to ensure Gemini didn't miss them
-    const linkAppendix = `\n\n---\n📽️ Watch your custom video audit here: ${dynamicVideoLink}`;
+    let linkAppendix = `\n\n---\n📽️ Watch your custom video audit here: ${dynamicVideoLink}`;
+    if (leadType === 'no_website') {
+        linkAppendix += `\n🎨 View your custom website mockup here: ${dynamicMockupLink}`;
+    }
     drafts.main = (drafts.main || '') + linkAppendix;
     if (drafts.follow_up_1) drafts.follow_up_1 += linkAppendix;
     if (drafts.follow_up_2) drafts.follow_up_2 += linkAppendix;

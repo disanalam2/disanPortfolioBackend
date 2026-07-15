@@ -4,6 +4,7 @@ const { getDb } = require('../config/emailDbWrapper');
 const { sendMailToLead } = require('../utils/mailer');
 const authMiddleware = require('../middleware/authMiddleware');
 const { generateAuditPDF } = require('../utils/pdfGenerator');
+const { generateMockupImage } = require('../utils/mockupGenerator');
 const fs = require('fs');
 
 // Get all leads
@@ -150,6 +151,27 @@ router.get('/pitch/:uuid', async (req, res) => {
     } catch (error) {
         console.error('Error fetching pitch data:', error);
         res.status(500).json({ error: 'Failed to fetch pitch data' });
+    }
+});
+
+// Public route for Dynamic Image Mockup Generation
+router.get('/mockup/:uuid', async (req, res) => {
+    try {
+        const { uuid } = req.params;
+        const db = await getDb();
+        const lead = await db.get('SELECT business_name FROM email_leads WHERE uuid = ?', [uuid]);
+        
+        if (!lead) {
+            return res.status(404).json({ error: 'Mockup not found.' });
+        }
+        
+        const imageBuffer = await generateMockupImage(lead.business_name);
+        
+        res.setHeader('Content-Type', 'image/png');
+        res.send(imageBuffer);
+    } catch (error) {
+        console.error('Error generating mockup:', error);
+        res.status(500).json({ error: 'Failed to generate mockup' });
     }
 });
 

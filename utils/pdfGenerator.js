@@ -64,6 +64,14 @@ async function generateAuditPDF(businessName, websiteIssues, videoLink = null) {
                 addMetric('Mobile CLS (Visual Stability)', audit.mobile_cls, false);
                 addMetric('Desktop CLS (Visual Stability)', audit.desktop_cls, false);
 
+                if (audit.tech_stack && audit.tech_stack !== 'Custom / Unknown') issuesText.push(`[INFO] Technology Stack: ${audit.tech_stack}`);
+                
+                if (audit.running_ads === true) issuesText.push(`[FAIL] Ad Spend Waste: You are running Ads to a slow website`);
+                else if (audit.no_tracking === true) issuesText.push(`[FAIL] Marketing Blind: No Tracking Pixel Installed`);
+
+                if (audit.accessibility_issues > 0) issuesText.push(`[FAIL] ADA Compliance Risk: ${audit.accessibility_issues} images missing alt-tags`);
+                if (audit.broken_links > 0) issuesText.push(`[FAIL] Broken Links: ${audit.broken_links} dead links found on homepage`);
+
                 if (audit.mobile_responsive === false) issuesText.push(`[FAIL] Mobile Responsiveness: Not Optimized`);
                 if (audit.ssl_issue === true) issuesText.push(`[FAIL] Security: Missing SSL Certificate`);
                 if (audit.missing_seo === true) issuesText.push(`[FAIL] SEO: Missing basic Meta tags`);
