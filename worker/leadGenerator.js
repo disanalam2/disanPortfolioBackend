@@ -113,20 +113,39 @@ async function fetchLeadsFromGooglePlaces(location, phase) {
         incrementApiUsage('GOOGLE');
 
         const results = response.data.results || [];
+        const topResults = results.slice(0, 5); // Limit to 5 to avoid extreme API costs
         
-        const mappedLeads = results.map(el => ({
-            name: el.name,
-            amenity: el.types ? el.types[0] : 'business',
-            phone: null, // textsearch doesn't always return phone/website without Place Details API
-            email: null,
-            website: null,
-            address: el.formatted_address,
-            place_id: el.place_id,
-            rating: el.rating
-        }));
+        const mappedLeads = [];
+        for (const place of topResults) {
+            let phone = null;
+            let website = null;
+            
+            // Deep scan: Fetch exact website and phone from Place Details API
+            try {
+                const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=website,formatted_phone_number&key=${apiKey}`;
+                const detailsResponse = await axios.get(detailsUrl);
+                if (detailsResponse.data.status === 'OK') {
+                    const details = detailsResponse.data.result;
+                    phone = details.formatted_phone_number || null;
+                    website = details.website || null;
+                    incrementApiUsage('GOOGLE');
+                }
+            } catch (err) {
+                console.error("Error fetching Place Details:", err.message);
+            }
+            
+            mappedLeads.push({
+                name: place.name,
+                amenity: place.types ? place.types[0] : 'business',
+                phone: phone,
+                email: null,
+                website: website,
+                address: place.formatted_address,
+                place_id: place.place_id,
+                rating: place.rating
+            });
+        }
 
-        // We can't filter by "has_website" natively in textsearch without details API. 
-        // We'll let aiDrafter.js do the deep verification.
         return mappedLeads;
     } catch (error) {
         console.error(`Error fetching from Google Places API for ${location}:`, error.message);

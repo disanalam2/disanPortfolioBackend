@@ -125,7 +125,7 @@ cron.schedule('0 */6 * * *', async () => {
             const receiver = shuffled[1];
             
             const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-            const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+            const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
             const prompt = `Write a highly realistic, casual email (2-4 sentences) that looks like an ongoing internal company thread. For example, discussing a fake project update, asking for a fake invoice, confirming a meeting time, or sharing a relevant industry link. Do not use any placeholders like [Name] or [Company]. Just start the text immediately. Make it sound extremely natural and human.`;
             const response = await model.generateContent(prompt);
             const body = response.response.text().trim();

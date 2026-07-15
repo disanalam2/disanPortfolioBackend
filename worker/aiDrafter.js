@@ -105,7 +105,7 @@ async function generateColdEmail(businessName, niche, leadType, websiteIssues = 
           "follow_up_2": "follow up 2 text here"
         }`;
 
-        const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
         
         let parts = [{ text: finalPrompt }];
 
@@ -164,7 +164,7 @@ async function findBusinessDetails(businessName, address) {
         }`;
 
         const model = ai.getGenerativeModel({
-             model: 'gemini-2.5-flash',
+             model: 'gemini-1.5-flash',
              tools: [{ googleSearch: {} }]
         });
         
@@ -208,7 +208,7 @@ async function generateManualAuditReport(url, auditData) {
         Format the response in a very readable way with bullet points or clear headings. The tone should be consultative, professional, and slightly urgent (FOMO), emphasizing that they are losing valuable traffic and high-ticket buyers to competitors. 
         You can write in a mix of English and simple terms (like Hinglish if helpful, but mostly professional English that is easy to read).`;
         
-        const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+        const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const response = await model.generateContent(prompt);
         return response.response.text();
     } catch (error) {
