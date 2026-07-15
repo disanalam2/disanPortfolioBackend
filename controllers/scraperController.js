@@ -64,80 +64,37 @@ exports.startScraper = async (req, res) => {
         console.log(`Starting automated scrape for: ${query}`);
         const rawLeads = await scrapeGooglePlaces(query);
         
-        const processedLeads = [];
         const db = await getDb();
+        const { enqueue } = require('../worker/queue');
         
-        await Promise.all(rawLeads.map(async (lead) => {
+        let enqueuedCount = 0;
+        
+        for (const lead of rawLeads) {
             // Check if we already have this business to avoid duplicates
             const existing = await db.get('SELECT id FROM email_leads WHERE business_name = ? LIMIT 1', [lead.business_name]);
-            if (existing) return;
+            if (existing) continue;
 
-            let finalEmail = '';
-            let auditReport = null;
-            let leadType = 'no_website';
-
-            if (lead.website) {
-                // We have a website!
-                leadType = 'bad_website'; // Assume bad until proven good
-                
-                console.log(`Auditing and scraping email for: ${lead.website}`);
-                // 1. Try to find email and phone
-                const contactData = await findContactDetailsOnWebsite(lead.website);
-                finalEmail = contactData.emails;
-                if (!lead.phone && contactData.phones) {
-                    lead.phone = contactData.phones;
-                }
-                
-                // 2. Audit Website
-                const { auditData } = await deepAuditWebsite(lead.website);
-                auditReport = auditData;
-            }
-
-            // 3. Generate AI Draft
-            const drafts = await generateColdEmail(
-                lead.business_name, 
-                niche, 
-                leadType, 
-                auditReport ? JSON.stringify(auditReport) : null,
-                'A',
-                '',
-                '',
-                lead.rating || null
-            );
-
-            // Save to Database
-            const insertResult = await db.run(
-                `INSERT INTO email_leads (uuid, business_name, address, phone, website, email, source, lead_type, website_issues, email_draft, follow_up_1_draft, follow_up_2_draft, status) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    require('crypto').randomUUID(),
-                    lead.business_name,
-                    lead.address,
-                    lead.phone,
-                    lead.website,
-                    finalEmail,
-                    lead.source,
-                    leadType,
-                    auditReport ? JSON.stringify(auditReport) : null,
-                    drafts.main,
-                    drafts.follow_up_1,
-                    drafts.follow_up_2,
-                    'draft_ready'
-                ]
-            );
-
-            processedLeads.push({
-                ...lead,
-                id: insertResult.lastID,
-                email: finalEmail,
-                lead_type: leadType,
-                audit_report: auditReport
-            });
-        }));
+            const formattedLead = {
+                name: lead.business_name,
+                amenity: niche,
+                phone: lead.phone,
+                email: null,
+                website: lead.website,
+                address: lead.address,
+                place_id: `google_places_auto_${Date.now()}`,
+                rating: lead.rating || null,
+                lead_source_type: 'google_places_auto'
+            };
+            
+            const phase = formattedLead.website ? 2 : 1;
+            
+            await enqueue('process_lead', { lead: formattedLead, phase, location });
+            enqueuedCount++;
+        }
 
         res.json({
-            message: `Successfully scraped ${processedLeads.length} new leads!`,
-            leads: processedLeads
+            message: `Successfully found and queued ${enqueuedCount} new leads for processing! Check AI Queue Status to monitor progress.`,
+            leads: [] // Processed asynchronously
         });
 
     } catch (error) {
