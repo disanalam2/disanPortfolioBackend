@@ -25,6 +25,18 @@ exports.renderBlogSEO = async (req, res, next) => {
         const safeTitle = escapeAttr(blog.title);
         const safeSummary = escapeAttr(blog.summary);
 
+        const frontendUrl = process.env.FRONTEND_URL || 'https://disanalam.me';
+        const blogUrl = `${frontendUrl}/blogs/${blog.slug}`;
+
+        // Check if the request is from a social media bot
+        const userAgent = req.get('user-agent') || '';
+        const isBot = /bot|facebook|whatsapp|linkedin|twitter|slack|telegram|discord|skype|viber/i.test(userAgent);
+
+        if (!isBot) {
+            // If it's a real user, instantly redirect them to the Firebase frontend
+            return res.redirect(302, blogUrl);
+        }
+
         // Create the raw HTML for the bot
         const html = `
             <!DOCTYPE html>
@@ -39,18 +51,22 @@ exports.renderBlogSEO = async (req, res, next) => {
                 <meta property="og:title" content="${safeTitle} - Disan Alam">
                 <meta property="og:description" content="${safeSummary}">
                 <meta property="og:image" content="${blog.thumbnail || 'https://disanalam.me/banner.jpeg'}">
-                <meta property="og:url" content="https://disanalam.me/blogs/${blog.slug}">
+                <meta property="og:url" content="${blogUrl}">
                 
                 <!-- Twitter Card -->
                 <meta name="twitter:card" content="summary_large_image">
                 <meta name="twitter:title" content="${safeTitle} - Disan Alam">
                 <meta name="twitter:description" content="${safeSummary}">
                 <meta name="twitter:image" content="${blog.thumbnail || 'https://disanalam.me/banner.jpeg'}">
+
+                <!-- Fallback Redirect just in case a browser doesn't follow 302 or is a weird bot -->
+                <script>window.location.href = "${blogUrl}";</script>
             </head>
             <body>
                 <h1>${safeTitle}</h1>
                 <p>${safeSummary}</p>
                 <img src="${blog.thumbnail || 'https://disanalam.me/banner.jpeg'}" alt="${safeTitle}">
+                <p>If you are not redirected automatically, follow this <a href="${blogUrl}">link to the blog</a>.</p>
             </body>
             </html>
         `;

@@ -1,0 +1,33 @@
+name: Deploy Backend to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. Main folder me jayein
+            cd /home/ubuntu/Disan-portfolio
+            
+            # 2. Backend wale folder me jakar latest code pull karein
+            cd disanPortfolioBackend
+            git pull origin main
+            
+            # 3. Wapas main folder me aakar sirf Backend container ko restart/rebuild karein
+            cd ..
+            docker-compose stop backend
+            docker-compose up -d --build backend
+            
+            # 4. Purani images ko clean karein (Space bachane ke liye)
+            docker image prune -f
