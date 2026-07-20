@@ -15,7 +15,7 @@ services:
 
   backend:
     build:
-      context: ./disanPortfolioBackend
+      context: .
       dockerfile: Dockerfile
     container_name: disan_portfolio_backend
     ports:
@@ -28,20 +28,9 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-rootpassword}
       - DB_NAME=${DB_NAME:-portfolio_db}
     env_file:
-      - ./disanPortfolioBackend/.env
+      - .env
     depends_on:
       - mysql_db
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./disanPortfoliomain/disanPortfolio
-      dockerfile: Dockerfile
-    container_name: disan_portfolio_frontend
-    ports:
-      - "80:80" # Map to port 80 directly for web traffic
-    depends_on:
-      - backend
     restart: unless-stopped
 
 volumes:
