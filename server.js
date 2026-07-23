@@ -149,7 +149,7 @@ const contactLimiter = rateLimit({
 });
 
 app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
-app.use('/api/contact', contactLimiter, require('./routes/contactRoutes'));
+app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/about', require('./routes/aboutRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/scraper', adminLimiter, require('./routes/scraperRoutes'));

@@ -9,11 +9,17 @@ exports.validateMessage = [
     body('preference').optional().trim().escape(),
     body('contactHandle').optional().trim().escape(),
     body('websiteUrl').custom((value, { req }) => {
-        if (req.body.subject !== 'Enterprise Custom Web App (New Build)' && !value) {
+        const servicesRequiringUrl = [
+            'Free Technical Performance & SEO Audit',
+            'Free System Architecture & Automation Audit',
+            'Free Sales Funnel, UX & Tracking Audit',
+            'Website Rebuild & Tech Stack Modernization'
+        ];
+        if (servicesRequiringUrl.includes(req.body.subject) && !value) {
             throw new Error('Website URL is required for this service.');
         }
         return true;
-    }).trim() // Intentionally not escaping URL so it remains valid
+    }).optional({ checkFalsy: true }).trim() // Intentionally not escaping URL so it remains valid
 ];
 
 const nodemailer = require('nodemailer');
