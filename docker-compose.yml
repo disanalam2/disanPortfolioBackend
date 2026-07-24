@@ -8,6 +8,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-rootpassword}
       MYSQL_DATABASE: ${DB_NAME:-portfolio_db}
+    command: --innodb-buffer-pool-size=64M
     ports:
       - "3306:3306"
     volumes:
