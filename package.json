@@ -26,7 +26,7 @@
     "https-proxy-agent": "^9.1.0",
     "imapflow": "^1.4.6",
     "jsonwebtoken": "^9.0.3",
-    "mailparser": "^3.9.14",
+    "mailparser": "^3.9.8",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
     "mysql2": "^3.22.3",

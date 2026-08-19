@@ -204,6 +204,17 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     try {
+        // Check and create database if it doesn't exist
+        const mysql = require('mysql2/promise');
+        const tempConn = await mysql.createConnection({
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+        });
+        await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\`;`);
+        await tempConn.end();
+        console.log(`✅ Database ${process.env.DB_NAME} verified/created.`);
+
         // Server start hone par ek baar DB check kar lete hain
         await db.query('SELECT 1');
         console.log('✅ Successfully connected to MySQL Database!');
