@@ -17,15 +17,13 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 1. Main folder me jayein
-            cd /home/ubuntu/Disan-portfolio
+            # 1. Backend folder me jayein
+            cd /home/ubuntu/backend
             
-            # 2. Backend wale folder me jakar latest code pull karein
-            cd disanPortfolioBackend
+            # 2. Latest code pull karein
             git pull origin main
             
-            # 3. Wapas main folder me aakar sirf Backend container ko restart/rebuild karein
-            cd ..
+            # 3. Backend container ko restart/rebuild karein
             docker-compose stop backend
             docker-compose up -d --build backend
             
