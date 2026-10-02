@@ -152,7 +152,6 @@ app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/about', require('./routes/aboutRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
-app.use('/api/scraper', adminLimiter, require('./routes/scraperRoutes'));
 app.use('/api/skills', require('./routes/skillRoutes'));
 app.use('/api/experience', require('./routes/experienceRoutes'));
 app.use('/api/education', require('./routes/educationRoutes'));
@@ -161,13 +160,6 @@ app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/web-analytics', require('./routes/analyticsRoutes'));
 
-// Email Automation Routes
-app.use('/api/leads', adminLimiter, require('./routes/emailLeads'));
-app.use('/api/track', require('./routes/emailTrack'));
-app.use('/api/settings', adminLimiter, require('./routes/emailSettings'));
-app.use('/api/analytics', adminLimiter, require('./routes/emailAnalytics'));
-app.use('/api/inbox', adminLimiter, require('./routes/emailInbox'));
-app.use('/api/mockup', require('./routes/emailMockup'));
 
 const sitemapController = require('./controllers/sitemapController');
 const llmsController = require('./controllers/llmsController');
@@ -222,9 +214,6 @@ server.listen(PORT, async () => {
         // Auto-sync database schema
         await syncDatabase();
         
-        // Initialize Background Worker for Lead Generation
-        const worker = require('./worker/worker');
-        worker.initWorker();
     } catch (error) {
         console.error('❌ Database Connection Error:', error.message);
     }
