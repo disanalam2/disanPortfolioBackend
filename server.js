@@ -32,6 +32,7 @@ app.use(helmet({
       upgradeInsecureRequests: [],
     },
   },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   hsts: {
     maxAge: 31536000, // 1 year
     includeSubDomains: true,
