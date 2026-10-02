@@ -47,7 +47,9 @@ const allowedOrigins = [
   'https://disanalam.me',
   'https://www.disanalam.me',
   'https://disan-alam-portfolio.web.app',
-  'https://disan-alam-portfolio.firebaseapp.com'
+  'https://disan-alam-portfolio.firebaseapp.com',
+  'https://portfoliowebsite-6f9d4.web.app',
+  'https://portfoliowebsite-6f9d4.firebaseapp.com'
 ];
 if (process.env.FRONTEND_URL) {
     allowedOrigins.push(process.env.FRONTEND_URL);
