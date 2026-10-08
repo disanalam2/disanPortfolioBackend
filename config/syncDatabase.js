@@ -92,6 +92,8 @@ const syncDatabase = async () => {
               thumbnail LONGTEXT,
               views INT DEFAULT 0,
               scheduledFor DATETIME DEFAULT NULL,
+              affiliate_link TEXT DEFAULT NULL,
+              affiliate_image LONGTEXT DEFAULT NULL,
               created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
               updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
@@ -273,6 +275,22 @@ const syncDatabase = async () => {
             console.log('🔄 Adding missing column: scheduledFor to blogs table...');
             await db.execute("ALTER TABLE blogs ADD COLUMN scheduledFor DATETIME DEFAULT NULL;");
             console.log('✅ Column scheduledFor added to blogs successfully!');
+        }
+
+        // Check for 'affiliate_link' in 'blogs'
+        const [blogAffiliateLink] = await db.query("SHOW COLUMNS FROM blogs LIKE 'affiliate_link'");
+        if (blogAffiliateLink.length === 0) {
+            console.log('🔄 Adding missing column: affiliate_link to blogs table...');
+            await db.execute("ALTER TABLE blogs ADD COLUMN affiliate_link TEXT DEFAULT NULL;");
+            console.log('✅ Column affiliate_link added to blogs successfully!');
+        }
+
+        // Check for 'affiliate_image' in 'blogs'
+        const [blogAffiliateImage] = await db.query("SHOW COLUMNS FROM blogs LIKE 'affiliate_image'");
+        if (blogAffiliateImage.length === 0) {
+            console.log('🔄 Adding missing column: affiliate_image to blogs table...');
+            await db.execute("ALTER TABLE blogs ADD COLUMN affiliate_image LONGTEXT DEFAULT NULL;");
+            console.log('✅ Column affiliate_image added to blogs successfully!');
         }
 
         // --- Email Leads v2 Auto-Enhancement ---

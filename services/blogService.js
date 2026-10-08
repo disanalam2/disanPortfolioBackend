@@ -59,15 +59,15 @@ class BlogService {
      * @returns {Promise<number>} Inserted blog ID.
      */
     static async createBlog(blogData) {
-        let { title, slug, summary, content, thumbnail, scheduledFor } = blogData;
+        let { title, slug, summary, content, thumbnail, scheduledFor, affiliate_link, affiliate_image } = blogData;
         slug = this.sanitizeSlug(slug) || this.sanitizeSlug(title);
         const readTime = this.calculateReadTime(content);
         
         // Convert ISO string to Date object for mysql2 to handle timezones correctly
         const scheduledTime = scheduledFor ? new Date(scheduledFor) : null;
         
-        const sql = `INSERT INTO blogs (title, slug, summary, content, thumbnail, read_time, scheduledFor) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        const [result] = await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime, scheduledTime]);
+        const sql = `INSERT INTO blogs (title, slug, summary, content, thumbnail, read_time, scheduledFor, affiliate_link, affiliate_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const [result] = await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime, scheduledTime, affiliate_link || null, affiliate_image || null]);
         return result.insertId;
     }
 
@@ -77,15 +77,15 @@ class BlogService {
      * @param {Object} blogData 
      */
     static async updateBlog(id, blogData) {
-        let { title, slug, summary, content, thumbnail, scheduledFor } = blogData;
+        let { title, slug, summary, content, thumbnail, scheduledFor, affiliate_link, affiliate_image } = blogData;
         slug = this.sanitizeSlug(slug) || this.sanitizeSlug(title);
         const readTime = this.calculateReadTime(content);
 
         // Convert ISO string to Date object for mysql2 to handle timezones correctly
         const scheduledTime = scheduledFor ? new Date(scheduledFor) : null;
 
-        const sql = `UPDATE blogs SET title=?, slug=?, summary=?, content=?, thumbnail=?, read_time=?, scheduledFor=? WHERE id=?`;
-        await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime, scheduledTime, id]);
+        const sql = `UPDATE blogs SET title=?, slug=?, summary=?, content=?, thumbnail=?, read_time=?, scheduledFor=?, affiliate_link=?, affiliate_image=? WHERE id=?`;
+        await db.execute(sql, [title, slug, summary || "", content, thumbnail || "", readTime, scheduledTime, affiliate_link || null, affiliate_image || null, id]);
     }
 
     /**

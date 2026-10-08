@@ -10,7 +10,9 @@ exports.validateBlog = [
     body('slug').notEmpty().withMessage('Slug is required').trim(),
     body('content').notEmpty().withMessage('Content is required'),
     body('summary').optional().isString(),
-    body('thumbnail').optional().isString()
+    body('thumbnail').optional().isString(),
+    body('affiliate_link').optional().isString(),
+    body('affiliate_image').optional().isString()
 ];
 
 /**
