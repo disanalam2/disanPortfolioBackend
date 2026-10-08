@@ -36,7 +36,7 @@ exports.uploadFile = async (req, res, next) => {
         if (isImage) {
             fileBuffer = await sharp(req.file.buffer)
                 .resize({ width: 1000, withoutEnlargement: true }) // Reduced from 1200 to 1000
-                .webp({ quality: 60, effort: 6 }) // Heavily optimized WebP (60% quality, max effort)
+                .webp({ quality: 75, effort: 4 }) // Reduced effort from 6 to 4 to prevent CPU/Memory spikes
                 .toBuffer();
             contentType = 'image/webp';
         }
