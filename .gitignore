@@ -1,5 +1,8 @@
 .env
 .env.*
+!.env.example
 /node_modules
 *.csv
 /uploads
+*.sqlite
+.DS_Store

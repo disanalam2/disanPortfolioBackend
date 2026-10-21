@@ -16,8 +16,14 @@ const app = express();
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
-// Serve Swagger API Docs
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Serve Swagger API Docs (Only in non-production environments to prevent public API schema exposure)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+} else {
+  app.use('/api-docs', (req, res) => {
+    res.status(404).json({ success: false, message: 'API documentation is disabled in production.' });
+  });
+}
 
 // Middlewares
 app.use(helmet({
@@ -92,8 +98,8 @@ app.use(cors({
   }
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ limit: '1mb', extended: true }));
 
 // Login pe brute-force rokne ke liye rate limiter
 const authLimiter = rateLimit({
@@ -144,13 +150,6 @@ app.use((req, res, next) => {
     }
 });
 
-// Contact form spam rokne ke liye rate limiter
-const contactLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // Max 5 messages per IP per hour
-  message: { success: false, message: 'Too many messages sent from this IP, please try again after an hour.' }
-});
-
 app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/about', require('./routes/aboutRoutes'));
@@ -162,6 +161,7 @@ app.use('/api/certificates', require('./routes/certificateRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/web-analytics', require('./routes/analyticsRoutes'));
+app.use('/api/github-stats', require('./routes/githubStatsRoutes'));
 
 
 const sitemapController = require('./controllers/sitemapController');

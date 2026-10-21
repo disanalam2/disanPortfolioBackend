@@ -2,9 +2,9 @@ const db = require('../config/db');
 const { body, validationResult } = require('express-validator');
 
 exports.validateMessage = [
-    body('name').notEmpty().withMessage('Name is required').trim().escape(),
+    body('name').trim().notEmpty().withMessage('Name is required').escape(),
     body('email').optional({ checkFalsy: true }).isEmail().withMessage('Valid email is required').normalizeEmail(),
-    body('message').notEmpty().withMessage('Message cannot be empty').trim().escape(),
+    body('message').trim().notEmpty().withMessage('Message cannot be empty').escape(),
     body('subject').optional().trim().escape(),
     body('preference').optional().trim().escape(),
     body('contactHandle').optional().trim().escape(),
@@ -18,8 +18,18 @@ exports.validateMessage = [
         if (servicesRequiringUrl.includes(req.body.subject) && !value) {
             throw new Error('Website URL is required for this service.');
         }
+        if (value) {
+            try {
+                const url = new URL(value);
+                if (!['http:', 'https:'].includes(url.protocol)) {
+                    throw new Error('Website URL must use http or https.');
+                }
+            } catch (error) {
+                throw new Error('Website URL is invalid.');
+            }
+        }
         return true;
-    }).optional({ checkFalsy: true }).trim() // Intentionally not escaping URL so it remains valid
+    }).optional({ checkFalsy: true }).trim()
 ];
 
 const nodemailer = require('nodemailer');

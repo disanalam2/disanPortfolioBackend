@@ -1,8 +1,26 @@
 const db = require('./db');
 
+const CURRENT_SCHEMA_VERSION = 1;
+
 const syncDatabase = async () => {
-    console.log('🔄 Checking database schema and synchronizing...');
     try {
+        // Fast-path: Ensure schema_version table exists
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS schema_version (
+                id INT PRIMARY KEY DEFAULT 1,
+                version INT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `);
+
+        // Check if DB is already up to date to skip 35+ sequential queries on cold start
+        const [versionRows] = await db.query('SELECT version FROM schema_version WHERE id = 1');
+        if (versionRows.length > 0 && versionRows[0].version >= CURRENT_SCHEMA_VERSION) {
+            console.log(`⚡ Database schema already up to date (v${versionRows[0].version}). Skipping 35+ migration queries for instant 0ms cold start.`);
+            return;
+        }
+
+        console.log('🔄 Checking database schema and synchronizing...');
         const queries = [
             `CREATE TABLE IF NOT EXISTS email_inbox (
               id INT AUTO_INCREMENT PRIMARY KEY,
@@ -370,6 +388,13 @@ const syncDatabase = async () => {
                 console.log('✅ Column is_active added to email_search_state successfully!');
             }
         }
+
+        // Stamping database schema version to prevent repetitive queries on future restarts
+        await db.execute(`
+            INSERT INTO schema_version (id, version) VALUES (1, ?)
+            ON DUPLICATE KEY UPDATE version = ?;
+        `, [CURRENT_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION]);
+        console.log(`✅ Database schema synchronized and recorded at v${CURRENT_SCHEMA_VERSION}.`);
 
     } catch (error) {
         console.error('❌ Database Sync Error:', error.message);

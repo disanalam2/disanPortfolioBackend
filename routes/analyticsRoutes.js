@@ -2,10 +2,20 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const authMiddleware = require('../middleware/authMiddleware');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter for public analytics tracking: Max 30 requests per IP per minute
+const analyticsLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30,
+    message: { success: false, message: 'Too many analytics requests from this IP.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // @route   POST /api/analytics/track
 // @desc    Track a page view (Public)
-router.post('/track', async (req, res) => {
+router.post('/track', analyticsLimiter, async (req, res) => {
     try {
         const { page_path, referrer, session_id, device_type } = req.body;
         const user_agent = req.headers['user-agent'] || '';
