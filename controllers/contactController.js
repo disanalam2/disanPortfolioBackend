@@ -93,9 +93,9 @@ exports.sendMessage = async (req, res, next) => {
                                 (process.env.EMAIL_HOST && process.env.EMAIL_HOST.toLowerCase().includes('gmail')) ||
                                 (process.env.EMAIL_USER && process.env.EMAIL_USER.toLowerCase().includes('@gmail.com'));
 
-                const emailPass = isGmail 
+                const emailPass = process.env.EMAIL_PASS 
                     ? process.env.EMAIL_PASS.replace(/\s+/g, '') 
-                    : process.env.EMAIL_PASS.trim();
+                    : '';
 
                 let transportConfig;
                 if (isGmail) {
