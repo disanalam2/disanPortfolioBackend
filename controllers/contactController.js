@@ -88,15 +88,47 @@ exports.sendMessage = async (req, res, next) => {
         // 3. Send Email Notification asynchronously
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             try {
-                const transporter = nodemailer.createTransport({
-                    host: 'smtp.zoho.in',
-                    port: 465,
-                    secure: true,
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS
-                    }
-                });
+                // Smart SMTP Configuration (Auto-detects Gmail vs Zoho vs Custom SMTP)
+                const isGmail = (process.env.EMAIL_SERVICE && process.env.EMAIL_SERVICE.toLowerCase() === 'gmail') ||
+                                (process.env.EMAIL_HOST && process.env.EMAIL_HOST.toLowerCase().includes('gmail')) ||
+                                (process.env.EMAIL_USER && process.env.EMAIL_USER.toLowerCase().includes('@gmail.com'));
+
+                const emailPass = isGmail 
+                    ? process.env.EMAIL_PASS.replace(/\s+/g, '') 
+                    : process.env.EMAIL_PASS.trim();
+
+                let transportConfig;
+                if (isGmail) {
+                    transportConfig = {
+                        service: 'gmail',
+                        auth: {
+                            user: process.env.EMAIL_USER.trim(),
+                            pass: emailPass
+                        }
+                    };
+                } else if (process.env.EMAIL_HOST) {
+                    transportConfig = {
+                        host: process.env.EMAIL_HOST.trim(),
+                        port: parseInt(process.env.EMAIL_PORT, 10) || 465,
+                        secure: process.env.EMAIL_SECURE !== 'false',
+                        auth: {
+                            user: process.env.EMAIL_USER.trim(),
+                            pass: emailPass
+                        }
+                    };
+                } else {
+                    transportConfig = {
+                        host: 'smtp.zoho.in',
+                        port: 465,
+                        secure: true,
+                        auth: {
+                            user: process.env.EMAIL_USER.trim(),
+                            pass: emailPass
+                        }
+                    };
+                }
+
+                const transporter = nodemailer.createTransport(transportConfig);
 
                 let contactLinkHTML = contactHandle || 'N/A';
                 if (preference === 'whatsapp' && contactHandle) {
@@ -107,12 +139,14 @@ exports.sendMessage = async (req, res, next) => {
                     contactLinkHTML = `<a href="${tLink}" target="_blank" style="color: #0088cc; font-weight: bold; text-decoration: none;">✈️ Chat on Telegram (${contactHandle})</a>`;
                 }
 
+                const adminReceiver = process.env.ADMIN_RECEIVER_EMAIL || 'admin@disanalam.me';
+
                 const adminMailOptions = {
-                    from: `"Portfolio System" <${process.env.EMAIL_USER}>`,
-                    to: process.env.ADMIN_RECEIVER_EMAIL || process.env.EMAIL_USER,
-                    replyTo: email,
+                    from: `"Portfolio System" <${process.env.EMAIL_USER.trim()}>`,
+                    to: adminReceiver,
+                    replyTo: email || adminReceiver,
                     subject: `🔥 New Lead: ${subject || 'Inquiry'} from ${name}`,
-                    text: `New Lead Received!\nName: ${name}\nEmail: ${email}\nPreference: ${preference}\nContact: ${contactHandle}\nSubject: ${subject}\nWebsite: ${websiteUrl}\nMessage: ${message}`,
+                    text: `New Lead Received!\nName: ${name}\nEmail: ${email || 'N/A'}\nPreference: ${preference}\nContact: ${contactHandle}\nSubject: ${subject}\nWebsite: ${websiteUrl}\nMessage: ${message}`,
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9fafb;">
                             <h2 style="color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">New Portfolio Lead Received!</h2>
@@ -124,7 +158,7 @@ exports.sendMessage = async (req, res, next) => {
                                 </tr>
                                 <tr>
                                     <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #333;">Email</td>
-                                    <td style="padding: 12px; border: 1px solid #ddd; background: #fff;"><a href="mailto:${email}" style="color: #2563eb;">${email}</a></td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; background: #fff;"><a href="mailto:${email || ''}" style="color: #2563eb;">${email || 'N/A'}</a></td>
                                 </tr>
                                 <tr>
                                     <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #333;">Contact Preference</td>
@@ -152,7 +186,7 @@ exports.sendMessage = async (req, res, next) => {
                     `
                 };
 
-                const isPaidService = !subject.startsWith('Free');
+                const isPaidService = subject && !subject.startsWith('Free');
                 
                 const paymentTermsHTML = isPaidService ? `
                     <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0;">
@@ -172,8 +206,8 @@ exports.sendMessage = async (req, res, next) => {
                                       `Best regards,\nDisan Alam`;
 
                 const userMailOptions = {
-                    from: `"Disan Alam" <${process.env.EMAIL_USER}>`,
-                    replyTo: process.env.EMAIL_USER,
+                    from: `"Disan Alam" <${process.env.EMAIL_USER.trim()}>`,
+                    replyTo: adminReceiver,
                     to: email,
                     subject: `Re: ${subject || 'Your Inquiry'} - Disan Alam`,
                     text: plainTextBody,
@@ -201,16 +235,28 @@ exports.sendMessage = async (req, res, next) => {
                     `
                 };
 
-                // Send both emails in parallel
-                await Promise.all([
-                    transporter.sendMail(adminMailOptions),
-                    transporter.sendMail(userMailOptions)
-                ]);
-                
-                console.log(`Email notifications sent successfully (Admin & User: ${email})`);
+                // 1. Dispatch Admin Notification to admin@disanalam.me
+                try {
+                    await transporter.sendMail(adminMailOptions);
+                    console.log(`✅ Admin lead email notification sent to ${adminReceiver}`);
+                } catch (adminErr) {
+                    console.error(`❌ Failed to send admin lead email to ${adminReceiver}:`, adminErr.message || adminErr);
+                }
+
+                // 2. Dispatch User Auto-reply if user provided email
+                if (email && email.trim()) {
+                    try {
+                        await transporter.sendMail(userMailOptions);
+                        console.log(`✅ User confirmation email sent to ${email}`);
+                    } catch (userErr) {
+                        console.error(`❌ Failed to send user confirmation email to ${email}:`, userErr.message || userErr);
+                    }
+                }
             } catch (emailError) {
-                console.error("Failed to send email notification:", emailError);
+                console.error("Failed to setup email transporter:", emailError);
             }
+        } else {
+            console.warn("⚠️ EMAIL_USER or EMAIL_PASS not configured in .env. Skipping email dispatch.");
         }
     } catch (error) {
         next(error);
