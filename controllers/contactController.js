@@ -37,19 +37,19 @@ const nodemailer = require('nodemailer');
 const getDynamicReply = (subject) => {
     switch(subject) {
         case 'Free Technical Performance & SEO Audit':
-            return "Thank you for requesting a Free Technical Performance & SEO Audit! I will analyze your website's architecture, load times, Core Web Vitals, and search visibility. You can expect a detailed, completely free audit report within 24-48 hours.";
+            return "Thank you for reaching out! We have received your response, and I am analyzing your request. I will review your website's architecture, load times, Core Web Vitals, and search visibility, and I will try my best to contact you within 24 hours.";
         case 'Free System Architecture & Automation Audit':
-            return "Thanks for requesting a System Architecture & Automation Audit! I will review your current infrastructure and workflows to identify bottlenecks and opportunities for automation. You will receive a comprehensive free report shortly.";
+            return "Thank you for reaching out! We have received your response. I will review your current infrastructure and workflows to identify bottlenecks and automation opportunities, and I will try my best to contact you within 24 hours.";
         case 'Free Sales Funnel, UX & Tracking Audit':
-            return "Thank you for your interest! I will analyze your user journey, conversion bottlenecks, and tracking setups (Analytics, Pixels) to help maximize your ROI. Your free audit report will be ready within 24-48 hours.";
+            return "Thank you for reaching out! We have received your response. I will analyze your user journey, conversion funnel, and tracking setups, and I will try my best to contact you within 24 hours.";
         case 'Website Rebuild & Tech Stack Modernization':
-            return "Modernizing your tech stack is a great step toward future-proofing your business. I'd love to learn more about your current limitations and discuss how we can rebuild your platform optimally. <br/><br/><em>Note: Full website rebuilds generally start at $299 / ₹20,000, varying based on complexity and scope.</em> Let's schedule a quick call to discuss your vision!";
+            return "Thank you for reaching out! We have received your response regarding modernizing your tech stack and rebuilding your platform. I will review your requirements and will try my best to contact you within 24 hours to discuss your project.";
         case 'Enterprise Custom Web App (New Build)':
-            return "I'm excited to hear about your new project! Building a custom enterprise app from scratch allows us to lay down a perfect, scalable architecture. I will review your vision and contact you soon to schedule a discovery call. <br/><br/><em>Note: Complete custom web builds generally start at $499 / ₹35,000. An exact estimate will be provided after our initial discussion.</em>";
+            return "Thank you for reaching out! We have received your response regarding your new web application. I am excited to learn more about your vision and will try my best to contact you within 24 hours to schedule a discovery discussion.";
         case 'Complete Digital Infrastructure Overhaul (Full Transformation)':
-            return "This sounds like a massive and exciting transformation! A complete digital overhaul requires careful planning and flawless execution. I will review your details and reach out to schedule an in-depth strategy session.";
+            return "Thank you for reaching out! We have received your response regarding a digital infrastructure overhaul. I will review your project details and will try my best to contact you within 24 hours to discuss the strategy.";
         default:
-            return "Thank you for getting in touch! I have received your message and will get back to you as soon as possible.";
+            return "Thank you for reaching out! We have received your response and will try our best to contact you within 24 hours.";
     }
 };
 exports.sendMessage = async (req, res, next) => {
@@ -186,30 +186,31 @@ exports.sendMessage = async (req, res, next) => {
                     `
                 };
 
-                const isPaidService = subject && !subject.startsWith('Free');
-                
-                const paymentTermsHTML = isPaidService ? `
-                    <div style="background-color: #f0fdf4; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #bbf7d0;">
-                        <h3 style="color: #166534; margin-top: 0; font-size: 15px;">Next Steps & Payment Terms</h3>
-                        <p style="color: #15803d; font-size: 14px; margin: 5px 0; line-height: 1.6;">
-                            ✓ <strong>Consultation First:</strong> I will contact you shortly to discuss your requirements in detail before starting any work.<br/>
-                            ✓ <strong>Pay After Completion:</strong> To ensure your complete satisfaction, payment is only required <em>after</em> the work is successfully completed.<br/>
-                            ✓ <strong>Flexible Currency:</strong> You can choose to pay in <strong>USD ($)</strong> or <strong>INR (₹)</strong>, whichever is more convenient for you.
+                const nextStepsHTML = `
+                    <div style="background-color: #f0fdf4; padding: 18px 20px; border-radius: 8px; margin: 24px 0; border: 1px solid #bbf7d0;">
+                        <h3 style="color: #166534; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">What Happens Next?</h3>
+                        <p style="color: #15803d; font-size: 14px; margin: 6px 0; line-height: 1.6;">
+                            ✓ <strong>Response Received:</strong> Your message and details have been successfully received.<br/>
+                            ✓ <strong>24-Hour Contact:</strong> I will thoroughly review your request and try my best to contact you within 24 hours.<br/>
+                            ✓ <strong>Personalized Consultation:</strong> We will connect via your preferred channel to discuss your vision, requirements, and next steps in detail.
                         </p>
                     </div>
-                ` : '';
+                `;
 
                 const plainTextBody = `Hi ${name},\n\n` + 
                                       getDynamicReply(subject).replace(/<[^>]*>?/gm, '') + `\n\n` +
-                                      (isPaidService ? `Next Steps & Payment Terms:\n- Consultation First\n- Pay After Completion\n- Flexible Currency (USD/INR)\n\n` : '') +
+                                      `What Happens Next?\n` +
+                                      `- Response Received: Your message and details have been successfully received.\n` +
+                                      `- 24-Hour Contact: I will review your request and try my best to contact you within 24 hours.\n` +
+                                      `- Personalized Consultation: We will connect to discuss your vision and next steps in detail.\n\n` +
                                       `Your Message Summary:\nSubject: ${subject || 'N/A'}\nDetails: ${message}\n\n` +
-                                      `Best regards,\nDisan Alam`;
+                                      `Best regards,\nDisan Alam\nFull-Stack Developer`;
 
                 const userMailOptions = {
                     from: `"Disan Alam" <${process.env.EMAIL_USER.trim()}>`,
                     replyTo: adminReceiver,
                     to: email,
-                    subject: `Re: ${subject || 'Your Inquiry'} - Disan Alam`,
+                    subject: `We have received your response - Disan Alam`,
                     text: plainTextBody,
                     html: `
                         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; background-color: #ffffff; border: 1px solid #eaeaea; border-radius: 8px;">
@@ -218,19 +219,19 @@ exports.sendMessage = async (req, res, next) => {
                                 ${getDynamicReply(subject)}
                             </p>
                             
-                            ${paymentTermsHTML}
+                            ${nextStepsHTML}
 
-                            <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 30px 0; border: 1px solid #f3f4f6;">
+                            <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 25px 0; border: 1px solid #f3f4f6;">
                                 <h3 style="color: #374151; margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Your Message Summary</h3>
-                                <p style="color: #6b7280; font-size: 14px; margin: 10px 0 5px 0;"><strong>Subject:</strong> ${subject || 'N/A'}</p>
-                                <p style="color: #6b7280; font-size: 14px; margin: 5px 0 15px 0;"><strong>Details:</strong><br/><br/>${message}</p>
+                                <p style="color: #6b7280; font-size: 14px; margin: 8px 0 4px 0;"><strong>Subject:</strong> ${subject || 'N/A'}</p>
+                                <p style="color: #6b7280; font-size: 14px; margin: 4px 0 0 0;"><strong>Details:</strong><br/><br/><span style="color: #374151; white-space: pre-wrap;">${message}</span></p>
                             </div>
-                            <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+                            <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
                                 If you have any immediate questions, feel free to reply directly to this email or reach out on WhatsApp.
                             </p>
                             <br/>
                             <p style="color: #111827; font-size: 16px; font-weight: bold; margin-bottom: 5px;">Best regards,</p>
-                            <p style="color: #4b5563; font-size: 16px; margin-top: 0;">Disan Alam<br/><span style="color: #9ca3af; font-size: 14px;">Full-Stack Developer</span></p>
+                            <p style="color: #4b5563; font-size: 15px; margin-top: 0;">Disan Alam<br/><span style="color: #9ca3af; font-size: 13px;">Full-Stack Developer</span></p>
                         </div>
                     `
                 };
