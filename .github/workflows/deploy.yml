@@ -24,8 +24,8 @@ jobs:
             git pull origin main
             
             # 3. Backend container ko restart/rebuild karein
-            docker-compose stop backend
-            docker-compose up -d --build backend
+            docker compose stop backend
+            docker compose up -d --build backend
             
             # 4. Purani images ko clean karein (Space bachane ke liye)
             docker image prune -f
