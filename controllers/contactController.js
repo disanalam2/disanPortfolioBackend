@@ -36,6 +36,12 @@ const nodemailer = require('nodemailer');
 
 const getDynamicReply = (subject) => {
     switch(subject) {
+        case 'Option A: One-Time Handover (Full Ownership)':
+            return "Thank you for reaching out! We have received your response regarding Option A: One-Time Handover (The Full Ownership Model). I will review your project requirements and AWS specifications, and I will try my best to contact you within 24 hours to schedule a project discovery call.";
+        case 'Option B: Standard Maintenance (Tech Partner)':
+            return "Thank you for reaching out! We have received your response regarding Option B: Standard Maintenance (The Tech Partner Model). I will review your application scope and maintenance preferences, and I will try my best to contact you within 24 hours.";
+        case 'Option C: Fully Managed & Hosted (Zero-Headache)':
+            return "Thank you for reaching out! We have received your response regarding Option C: Fully Managed & Hosted (The Zero-Headache Model). I will review your business goals and infrastructure needs, and I will try my best to contact you within 24 hours.";
         case 'Frontend & Landing Page Engineering':
             return "Thank you for reaching out! We have received your response regarding frontend and landing page engineering. I will review your project details and goals, and I will try my best to contact you within 24 hours.";
         case 'Full-Stack Web App & API Integration':
