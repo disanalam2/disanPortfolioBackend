@@ -36,6 +36,12 @@ const nodemailer = require('nodemailer');
 
 const getDynamicReply = (subject) => {
     switch(subject) {
+        case 'Frontend & Landing Page Engineering':
+            return "Thank you for reaching out! We have received your response regarding frontend and landing page engineering. I will review your project details and goals, and I will try my best to contact you within 24 hours.";
+        case 'Full-Stack Web App & API Integration':
+            return "Thank you for reaching out! We have received your response regarding your full-stack web application. I am excited to learn more about your vision, and I will try my best to contact you within 24 hours to schedule a discovery discussion.";
+        case 'Custom Enterprise Build & Managed Retainer':
+            return "Thank you for reaching out! We have received your response regarding a custom enterprise build and managed website retainer. I will review your requirements and will try my best to contact you within 24 hours.";
         case 'Free Technical Performance & SEO Audit':
             return "Thank you for reaching out! We have received your response, and I am analyzing your request. I will review your website's architecture, load times, Core Web Vitals, and search visibility, and I will try my best to contact you within 24 hours.";
         case 'Free System Architecture & Automation Audit':
