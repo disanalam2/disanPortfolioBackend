@@ -1,6 +1,6 @@
 const db = require('./db');
 
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 const syncDatabase = async () => {
     try {
@@ -72,6 +72,7 @@ const syncDatabase = async () => {
               subject VARCHAR(255) DEFAULT NULL,
               websiteUrl VARCHAR(255) DEFAULT NULL,
               message TEXT NOT NULL,
+              ip_address VARCHAR(100) DEFAULT NULL,
               created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;`,
             
@@ -249,6 +250,14 @@ const syncDatabase = async () => {
             console.log('🔄 Adding missing column: websiteUrl to messages table...');
             await db.execute("ALTER TABLE messages ADD COLUMN websiteUrl VARCHAR(255) DEFAULT NULL;");
             console.log('✅ Column websiteUrl added successfully!');
+        }
+
+        // Check for 'ip_address' column in 'messages' table (Legal Clickwrap Audit Trail)
+        const [msgIpColumns] = await db.query("SHOW COLUMNS FROM messages LIKE 'ip_address'");
+        if (msgIpColumns.length === 0) {
+            console.log('🔄 Adding missing column: ip_address to messages table...');
+            await db.execute("ALTER TABLE messages ADD COLUMN ip_address VARCHAR(100) DEFAULT NULL;");
+            console.log('✅ Column ip_address added successfully to messages table!');
         }
 
         // Ensure preference and phone columns are large enough and not restricted to ENUM

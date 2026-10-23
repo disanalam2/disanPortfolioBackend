@@ -13,6 +13,10 @@ const errorHandler = require('./middleware/errorMiddleware');
 
 const app = express();
 
+// 1. Trust proxy: AWS EC2 / Nginx / Load Balancer ke peeche real client IP capture karne ke liye
+// Isse req.ip, express-rate-limit, aur X-Forwarded-For me 100% real client IP milega
+app.set('trust proxy', true);
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 
@@ -95,7 +99,8 @@ app.use(cors({
     } else {
       callback(new Error('Not allowed by CORS'));
     }
-  }
+  },
+  credentials: true
 }));
 
 app.use(express.json({ limit: '1mb' }));

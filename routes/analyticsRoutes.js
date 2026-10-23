@@ -19,8 +19,8 @@ router.post('/track', analyticsLimiter, async (req, res) => {
     try {
         const { page_path, referrer, session_id, device_type } = req.body;
         const user_agent = req.headers['user-agent'] || '';
-        // Note: Express behind proxy might need req.headers['x-forwarded-for']
-        const ip_address = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+        const forwarded = req.headers['x-forwarded-for'];
+        const ip_address = forwarded ? forwarded.split(',')[0].trim() : (req.ip || req.socket.remoteAddress || 'unknown');
         
         await db.execute(
             'INSERT INTO page_views (page_path, referrer, user_agent, ip_address, session_id, device_type) VALUES (?, ?, ?, ?, ?, ?)',

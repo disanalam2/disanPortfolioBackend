@@ -61,10 +61,13 @@ exports.sendMessage = async (req, res, next) => {
 
         const { name, email, contactHandle, preference, subject, websiteUrl, message } = req.body;
 
-        // 1. Save to Database
-        // Note: phone column is used for contactHandle. syncDatabase.js automatically creates subject & websiteUrl.
-        const sql = `INSERT INTO messages (name, email, phone, preference, subject, websiteUrl, message) VALUES (?, ?, ?, ?, ?, ?, ?)`;
-        const [result] = await db.execute(sql, [name, email, contactHandle || "", preference || "", subject || null, websiteUrl || null, message]);
+        // Extract real client IP (AWS EC2 / Nginx / Load Balancer) for Section 10A IT Act 2000 Clickwrap Audit Trail
+        const forwarded = req.headers['x-forwarded-for'];
+        const clientIp = forwarded ? forwarded.split(',')[0].trim() : (req.ip || req.socket?.remoteAddress || 'unknown');
+
+        // 1. Save to Database with real client IP for Legal Audit Trail
+        const sql = `INSERT INTO messages (name, email, phone, preference, subject, websiteUrl, message, ip_address) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+        const [result] = await db.execute(sql, [name, email, contactHandle || "", preference || "", subject || null, websiteUrl || null, message, clientIp]);
 
         // Real-time update using Socket.IO
         const io = req.app.get('io');
@@ -175,6 +178,10 @@ exports.sendMessage = async (req, res, next) => {
                                 <tr>
                                     <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #333;">Website URL</td>
                                     <td style="padding: 12px; border: 1px solid #ddd; background: #fff;">${websiteUrl ? `<a href="${websiteUrl}" target="_blank" style="color: #2563eb;">${websiteUrl}</a>` : 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #333;">Client IP (Audit Trail)</td>
+                                    <td style="padding: 12px; border: 1px solid #ddd; background: #fff; color: #111; font-family: monospace;">${clientIp}</td>
                                 </tr>
                             </table>
 
